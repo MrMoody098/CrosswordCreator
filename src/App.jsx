@@ -6,8 +6,11 @@ import Home from './components/Home'
 import './App.css'
 
 function App() {
+  // Use base URL from Vite config (empty for dev, /CrosswordCreator/ for GitHub Pages)
+  const basePath = import.meta.env.BASE_URL || '/'
+  
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basePath}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/create-crossword" element={<CrosswordBuilder />} />
