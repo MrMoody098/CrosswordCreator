@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, useParams, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useParams, Navigate, useLocation } from 'react-router-dom'
 import CrosswordViewer from './components/CrosswordViewer'
 import CrosswordBuilder from './components/CrosswordBuilder'
 import Home from './components/Home'
@@ -26,10 +26,18 @@ function App() {
 
 function CrosswordViewerWrapper() {
   const { crosswordName } = useParams()
+  const location = useLocation()
   
   // Prevent reserved names from being treated as crossword names
   // Redirect to home if someone tries to access these routes
   const reservedNames = ['create-crossword', 'CrosswordCreator', 'crosswordcreator']
+  
+  // Also check if the pathname itself suggests we're at the root
+  // This handles cases where basename might not be working correctly
+  const pathname = location.pathname.toLowerCase()
+  if (pathname === '/crosswordcreator' || pathname === '/crosswordcreator/') {
+    return <Navigate to="/" replace />
+  }
   
   // Check immediately and redirect before rendering anything
   if (!crosswordName || reservedNames.includes(crosswordName)) {
