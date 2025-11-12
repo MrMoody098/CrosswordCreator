@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { getCrosswordList, deleteCrosswordFromLocalStorage, saveCrosswordToLocalStorage } from '../utils/localStorage'
+import { getCrosswordList, deleteCrosswordFromLocalStorage, saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage } from '../utils/localStorage'
 import { parseCluesCSV, parseGridCSV, parseCombinedCSV } from '../utils/csvParser'
-import { decodeCrosswordData } from '../utils/shareUtils'
+import { fetchSharedCrossword, shareCrosswordToSupabase, copyToClipboard } from '../utils/shareApi'
 import '../App.css'
 import './Home.css'
 
@@ -16,7 +16,7 @@ function Home() {
     loadCrosswords()
   }, [])
 
-  // Handle shared crossword links
+  // Handle shared crossword links from Supabase
   useEffect(() => {
     const shareParam = searchParams.get('share')
     if (shareParam) {
@@ -26,19 +26,24 @@ function Home() {
     }
   }, [searchParams])
 
-  const handleSharedCrossword = async (encodedData) => {
+  const handleSharedCrossword = async (shareId) => {
     try {
-      const { gridCSV, cluesCSV, displayName } = decodeCrosswordData(encodedData)
+      const result = await fetchSharedCrossword(shareId)
+      
+      if (!result.success) {
+        alert(`Error loading shared crossword: ${result.error}`)
+        return
+      }
       
       // Generate a unique name for the imported crossword
       const timestamp = Date.now()
-      const importName = displayName 
-        ? `${displayName}-shared-${timestamp}`.toLowerCase().replace(/[^a-z0-9]/g, '-')
+      const importName = result.displayName 
+        ? `${result.displayName}-shared-${timestamp}`.toLowerCase().replace(/[^a-z0-9]/g, '-')
         : `shared-crossword-${timestamp}`
       
       // Save to localStorage
-      saveCrosswordToLocalStorage(importName, gridCSV, cluesCSV, {
-        displayName: displayName || `Shared Crossword`
+      saveCrosswordToLocalStorage(importName, result.gridCSV, result.cluesCSV, {
+        displayName: result.displayName || `Shared Crossword`
       })
       
       // Reload crosswords list
@@ -49,6 +54,49 @@ function Home() {
     } catch (error) {
       console.error('Error importing shared crossword:', error)
       alert(`Error loading shared crossword: ${error.message}`)
+    }
+  }
+
+  const [shareModalData, setShareModalData] = useState(null)
+  const [shareLinkCopied, setShareLinkCopied] = useState(false)
+
+  const handleShare = async (crosswordName) => {
+    try {
+      // Load crossword data from localStorage
+      const crosswordData = loadCrosswordFromLocalStorage(crosswordName)
+      if (!crosswordData) {
+        alert('Crossword not found')
+        return
+      }
+
+      // Show loading state
+      setShareModalData({ crosswordName, loading: true, shareLink: null })
+
+      // Share to Supabase
+      const result = await shareCrosswordToSupabase(
+        crosswordData.gridCSV,
+        crosswordData.cluesCSV,
+        crosswordData.metadata?.displayName || crosswordName
+      )
+
+      if (!result.success) {
+        alert(`Error sharing crossword: ${result.error}`)
+        setShareModalData(null)
+        return
+      }
+
+      // Show share modal with link
+      setShareModalData({
+        crosswordName,
+        loading: false,
+        shareLink: result.shareLink,
+        displayName: crosswordData.metadata?.displayName || crosswordName
+      })
+      setShareLinkCopied(false)
+    } catch (error) {
+      console.error('Error sharing crossword:', error)
+      alert(`Error sharing crossword: ${error.message}`)
+      setShareModalData(null)
     }
   }
 
@@ -302,6 +350,13 @@ function Home() {
                     Play
                   </button>
                   <button
+                    className="card-btn share-btn"
+                    onClick={() => handleShare(crossword.name)}
+                    title="Share this crossword"
+                  >
+                    Share
+                  </button>
+                  <button
                     className="card-btn delete-btn"
                     onClick={() => handleDelete(crossword.name)}
                   >
@@ -313,6 +368,65 @@ function Home() {
           )}
         </div>
       </div>
+
+      {/* Share Modal */}
+      {shareModalData && (
+        <div className="import-modal-overlay" onClick={() => setShareModalData(null)}>
+          <div className="import-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="import-modal-header">
+              <h2>Share Crossword</h2>
+              <button className="import-modal-close" onClick={() => setShareModalData(null)}>×</button>
+            </div>
+            <div className="import-modal-content">
+              {shareModalData.loading ? (
+                <p>Generating share link...</p>
+              ) : (
+                <>
+                  <p style={{ marginBottom: '15px' }}>
+                    Share <strong>{shareModalData.displayName}</strong> with others!
+                  </p>
+                  <div className="import-input-group">
+                    <label htmlFor="share-link-input">Shareable Link:</label>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <input
+                        id="share-link-input"
+                        type="text"
+                        value={shareModalData.shareLink}
+                        readOnly
+                        className="import-name-input"
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        className="import-btn import-btn-primary"
+                        onClick={async () => {
+                          const success = await copyToClipboard(shareModalData.shareLink)
+                          if (success) {
+                            setShareLinkCopied(true)
+                            setTimeout(() => setShareLinkCopied(false), 2000)
+                          } else {
+                            alert('Failed to copy link. Please copy it manually.')
+                          }
+                        }}
+                        style={{ whiteSpace: 'nowrap', minWidth: '100px' }}
+                      >
+                        {shareLinkCopied ? '✓ Copied!' : 'Copy'}
+                      </button>
+                    </div>
+                    <small style={{ display: 'block', color: '#666', fontStyle: 'italic' }}>
+                      Anyone with this link can play your crossword!
+                    </small>
+                  </div>
+                  <div className="import-modal-buttons">
+                    <button className="import-btn import-btn-cancel" onClick={() => setShareModalData(null)}>
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

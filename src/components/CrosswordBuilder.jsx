@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { gridToCSV, cluesToCSV, downloadCSV, saveCSVToServer } from '../utils/crosswordBuilder'
 import { saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage, saveBuilderState, loadBuilderState, clearBuilderState } from '../utils/localStorage'
 import { parseCluesCSV, parseGridCSV } from '../utils/csvParser'
-import { generateShareableLink, copyToClipboard } from '../utils/shareUtils'
+import { shareCrosswordToSupabase, copyToClipboard } from '../utils/shareApi'
 import './CrosswordBuilder.css'
 
 const GRID_SIZE = 15
@@ -725,9 +725,14 @@ function CrosswordBuilder() {
         downloadCSV(combinedCSV, `${name}-combined.csv`)
       }
       
-      // Generate shareable link
-      const shareLink = generateShareableLink(gridCSV, cluesCSV, displayName)
-      setShareableLink(shareLink)
+      // Generate shareable link via Supabase
+      const shareResult = await shareCrosswordToSupabase(gridCSV, cluesCSV, displayName)
+      if (shareResult.success) {
+        setShareableLink(shareResult.shareLink)
+      } else {
+        console.error('Failed to generate share link:', shareResult.error)
+        setShareableLink(null)
+      }
       setLinkCopied(false)
       
       // Close save modal and show post-save modal
