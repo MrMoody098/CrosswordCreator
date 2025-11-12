@@ -43,6 +43,9 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
   align-self: stretch; /* Match height of crossword grid */
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .control-section {
@@ -53,6 +56,12 @@
 
 .control-section:last-child {
   border-bottom: none;
+}
+
+.shortcuts-section {
+  margin-top: auto;
+  border-bottom: none !important;
+  padding-bottom: 0;
 }
 
 .control-section h3 {
@@ -591,6 +600,9 @@
   padding: 20px;
   border-bottom: 2px solid #1a1a1a;
   background: #f5f5f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .save-modal-header h2 {
@@ -599,6 +611,26 @@
   color: #1a1a1a;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.import-modal-close {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #1a1a1a;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.import-modal-close:hover {
+  color: #dc3545;
 }
 
 .save-modal-content {
@@ -610,6 +642,36 @@
   font-size: 16px;
   color: #1a1a1a;
   text-align: center;
+}
+
+.import-file-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.import-file-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.import-file-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #1a1a1a;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.import-file-input {
+  padding: 8px;
+  border: 2px solid #1a1a1a;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 .save-modal-buttons {

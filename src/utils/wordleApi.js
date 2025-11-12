@@ -71,8 +71,9 @@ export async function fetchDailyWord() {
     }
 
     // Call the Edge Function
+    // Note: Date is calculated server-side to ensure everyone gets the same word for the day
     const { data, error } = await supabaseClient.functions.invoke('get-daily-word', {
-      body: { date: currentDate }
+      body: {}
     })
 
     if (error) {

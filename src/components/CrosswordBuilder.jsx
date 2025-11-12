@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { gridToCSV, cluesToCSV, downloadCSV, saveCSVToServer } from '../utils/crosswordBuilder'
-import { saveCrosswordToLocalStorage } from '../utils/localStorage'
+import { saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage } from '../utils/localStorage'
+import { parseCluesCSV, parseGridCSV } from '../utils/csvParser'
 import './CrosswordBuilder.css'
 
 const GRID_SIZE = 15
@@ -41,6 +42,8 @@ function CrosswordBuilder() {
   const [showSaveModal, setShowSaveModal] = useState(false) // For showing save confirmation modal
   const [showPostSaveModal, setShowPostSaveModal] = useState(false) // For showing post-save options
   const [savedCrosswordName, setSavedCrosswordName] = useState(null) // Store saved crossword name for navigation
+  const [showImportModal, setShowImportModal] = useState(false) // For showing import modal
+  const crosswordFileRef = useRef(null)
 
   const handleCellClick = (row, col) => {
     // Don't handle click if we just finished a drag - the drag handler manages that
@@ -744,6 +747,80 @@ function CrosswordBuilder() {
     }
   }, [gridSize])
 
+  const handleImport = async () => {
+    const crosswordFile = crosswordFileRef.current?.files?.[0]
+
+    if (!crosswordFile) {
+      alert('Please select a crossword CSV file')
+      return
+    }
+
+    try {
+      // Read the combined CSV file
+      const combinedText = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (e) => resolve(e.target.result)
+        reader.onerror = reject
+        reader.readAsText(crosswordFile)
+      })
+
+      // Parse the combined CSV file
+      let parsedData
+      try {
+        const { parseCombinedCSV } = await import('../utils/csvParser')
+        parsedData = parseCombinedCSV(combinedText)
+      } catch (parseError) {
+        alert(`Error parsing CSV file: ${parseError.message}\n\nMake sure you're importing a file downloaded from the Crossword Creator (combined format).`)
+        return
+      }
+
+      const { grid: parsedGrid, clues: parsedClues } = parsedData
+
+      // Determine grid size from imported grid
+      const maxRow = parsedGrid.length
+      const maxCol = parsedGrid[0]?.length || 0
+      const newGridSize = Math.max(maxRow, maxCol, GRID_SIZE)
+
+      // Resize grid if needed
+      if (newGridSize !== gridSize) {
+        setGridSize(newGridSize)
+      }
+
+      // Create a properly sized grid, filling with nulls if needed
+      // Convert blocked cells ('.') to null (empty/editable) so users can edit the crossword
+      const newGrid = []
+      for (let r = 0; r < newGridSize; r++) {
+        newGrid[r] = []
+        for (let c = 0; c < newGridSize; c++) {
+          if (parsedGrid[r] && parsedGrid[r][c] !== undefined) {
+            const cell = parsedGrid[r][c]
+            // Convert blocked cells to null (empty/editable) for the creator
+            if (cell === '.') {
+              newGrid[r][c] = null
+            } else {
+              newGrid[r][c] = cell
+            }
+          } else {
+            newGrid[r][c] = null
+          }
+        }
+      }
+
+      // Set the grid and clues
+      setGrid(newGrid)
+      setClues(parsedClues)
+
+      // Reset form
+      setShowImportModal(false)
+      if (crosswordFileRef.current) crosswordFileRef.current.value = ''
+
+      alert('Crossword imported successfully! You can now edit it.')
+    } catch (error) {
+      console.error('Error importing crossword:', error)
+      alert(`Error importing crossword: ${error.message}`)
+    }
+  }
+
   // Helper to get all cells in selection range
   const getSelectionCells = useCallback(() => {
     if (!selectionStart || !selectionEnd) return []
@@ -846,8 +923,6 @@ function CrosswordBuilder() {
     })
     
     setGrid(newGrid)
-    // Don't clear selection - keep it so user can see what was deleted
-    // Selection will be cleared when they click or move
   }, [selectionStart, selectionEnd, getSelectionCells, grid, currentMode])
 
   // Fill selection with a value
@@ -879,7 +954,7 @@ function CrosswordBuilder() {
     setDragStartCell({ row, col })
     setSelectedCell({ row, col })
     setIsMouseDragging(true)
-    setHasDragged(false) // Reset drag flag
+    setHasDragged(false) // Reset drag 
     // Start selection at this cell
     setSelectionStart({ row, col })
     setSelectionEnd({ row, col })
@@ -1649,29 +1724,39 @@ function CrosswordBuilder() {
           </div>
 
           <div className="control-section">
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className="shortcuts-btn"
-                onClick={() => setShowShortcuts(true)}
-                title="Keyboard Shortcuts"
-              >
-                ⌨️ Shortcuts
-              </button>
-              <button
-                onClick={() => {
-                  if (!crosswordName.trim()) {
-                    setNameInputError(true)
-                    setTimeout(() => setNameInputError(false), 600)
-                    return
-                  }
-                  setShowSaveModal(true)
-                }}
-                disabled={!crosswordName.trim()}
-                className="save-btn"
-              >
-                Save Crossword
-              </button>
-            </div>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="action-btn"
+            >
+              Import Crossword
+            </button>
+          </div>
+
+          <div className="control-section">
+            <button
+              onClick={() => {
+                if (!crosswordName.trim()) {
+                  setNameInputError(true)
+                  setTimeout(() => setNameInputError(false), 600)
+                  return
+                }
+                setShowSaveModal(true)
+              }}
+              disabled={!crosswordName.trim()}
+              className="save-btn"
+            >
+              Save Crossword
+            </button>
+          </div>
+
+          <div className="control-section shortcuts-section">
+            <button 
+              className="shortcuts-btn"
+              onClick={() => setShowShortcuts(true)}
+              title="Keyboard Shortcuts"
+            >
+              ⌨️ Shortcuts
+            </button>
           </div>
         </div>
 
@@ -1935,6 +2020,50 @@ function CrosswordBuilder() {
                   onClick={() => setShowPostSaveModal(false)}
                 >
                   Continue Editing
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="shortcuts-modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="save-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="save-modal-header">
+              <h2>Import Crossword</h2>
+              <button className="import-modal-close" onClick={() => setShowImportModal(false)}>×</button>
+            </div>
+            <div className="save-modal-content">
+              <p>Select the combined CSV file downloaded from the Crossword Creator to import a crossword for editing.</p>
+              <div className="import-file-inputs">
+                <div className="import-file-group">
+                  <label htmlFor="builder-import-crossword-file">Crossword CSV File:</label>
+                  <input
+                    id="builder-import-crossword-file"
+                    type="file"
+                    accept=".csv"
+                    ref={crosswordFileRef}
+                    className="import-file-input"
+                  />
+                  <small style={{ marginTop: '5px', display: 'block', color: '#666', fontStyle: 'italic' }}>
+                    Select the combined CSV file downloaded from the Crossword Creator
+                  </small>
+                </div>
+              </div>
+              <div className="save-modal-buttons">
+                <button
+                  className="save-modal-btn save-btn-primary"
+                  onClick={handleImport}
+                >
+                  Import
+                </button>
+                <button
+                  className="save-modal-btn save-btn-cancel"
+                  onClick={() => setShowImportModal(false)}
+                >
+                  Cancel
                 </button>
               </div>
             </div>

@@ -13,15 +13,14 @@ serve(async (req) => {
   }
 
   try {
-    // Get the date from request body (Ireland timezone)
-    const { date } = await req.json()
-    
-    if (!date) {
-      return new Response(
-        JSON.stringify({ error: 'Date is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Calculate the date server-side in Ireland timezone to ensure consistency
+    // This ensures everyone gets the same date regardless of their local timezone
+    const now = new Date()
+    const irelandDate = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Dublin' }))
+    const year = irelandDate.getFullYear()
+    const month = String(irelandDate.getMonth() + 1).padStart(2, '0')
+    const day = String(irelandDate.getDate()).padStart(2, '0')
+    const date = `${year}-${month}-${day}`
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
@@ -146,6 +145,7 @@ serve(async (req) => {
     }
 
     // Save the new word to database
+    // Try to insert - if it fails due to unique constraint, another request already created it
     const { error: insertError } = await supabase
       .from('daily_words')
       .insert({
@@ -154,14 +154,38 @@ serve(async (req) => {
         created_at: new Date().toISOString()
       })
 
+    // If insert failed due to duplicate (race condition), fetch the existing word
     if (insertError) {
-      console.error('Error inserting word:', insertError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to save word' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (insertError.code === '23505') { // Unique violation - word already exists for this date
+        // Another request already created the word, fetch it
+        const { data: existingWord, error: fetchError } = await supabase
+          .from('daily_words')
+          .select('word')
+          .eq('date', date)
+          .single()
+        
+        if (fetchError || !existingWord) {
+          console.error('Error fetching existing word after race condition:', fetchError)
+          return new Response(
+            JSON.stringify({ error: 'Failed to retrieve word' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        return new Response(
+          JSON.stringify({ word: existingWord.word }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } else {
+        console.error('Error inserting word:', insertError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to save word' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
+    // Successfully inserted new word
     return new Response(
       JSON.stringify({ word: newWord }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

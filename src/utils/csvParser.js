@@ -120,3 +120,42 @@ export function parseGridCSV(csvText) {
   return grid
 }
 
+/**
+ * Parse a combined CSV file that contains both grid and clues data
+ * Format: === GRID DATA ===\n[grid CSV]\n\n=== CLUES DATA ===\n[clues CSV]
+ * @param {string} combinedText - The combined CSV file content
+ * @returns {object} Object with grid and clues parsed
+ */
+export function parseCombinedCSV(combinedText) {
+  const gridMarker = '=== GRID DATA ==='
+  const cluesMarker = '=== CLUES DATA ==='
+  
+  // Find the markers
+  const gridIndex = combinedText.indexOf(gridMarker)
+  const cluesIndex = combinedText.indexOf(cluesMarker)
+  
+  if (gridIndex === -1 || cluesIndex === -1) {
+    throw new Error('Invalid combined CSV format. Expected markers: "=== GRID DATA ===" and "=== CLUES DATA ==="')
+  }
+  
+  // Extract grid CSV (between grid marker and clues marker)
+  const gridCSV = combinedText
+    .substring(gridIndex + gridMarker.length, cluesIndex)
+    .trim()
+  
+  // Extract clues CSV (after clues marker)
+  const cluesCSV = combinedText
+    .substring(cluesIndex + cluesMarker.length)
+    .trim()
+  
+  if (!gridCSV || !cluesCSV) {
+    throw new Error('Missing grid or clues data in combined CSV file')
+  }
+  
+  // Parse both sections
+  const grid = parseGridCSV(gridCSV)
+  const clues = parseCluesCSV(cluesCSV)
+  
+  return { grid, clues, gridCSV, cluesCSV }
+}
+
