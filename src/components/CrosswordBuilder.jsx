@@ -869,11 +869,6 @@ function CrosswordBuilder() {
     // Only start drag selection on left mouse button
     if (e.button !== 0) return
     
-    // In block mode, don't start selection drag - let block painting handle it
-    if (currentMode === 'block') {
-      return
-    }
-    
     setDragStartCell({ row, col })
     setSelectedCell({ row, col })
     setIsMouseDragging(true)
@@ -883,7 +878,7 @@ function CrosswordBuilder() {
     setSelectionEnd({ row, col })
     setIsSelecting(true)
     e.preventDefault() // Prevent text selection
-  }, [currentMode])
+  }, [])
 
   // Handle mouse move - extend selection while dragging
   const handleCellMouseMove = useCallback((row, col, e) => {
@@ -1642,13 +1637,22 @@ function CrosswordBuilder() {
           </div>
 
           <div className="control-section">
-            <button
-              onClick={saveCrossword}
-              disabled={!crosswordName.trim()}
-              className="save-btn"
-            >
-              Save Crossword
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="shortcuts-btn"
+                onClick={() => setShowShortcuts(true)}
+                title="Keyboard Shortcuts"
+              >
+                ⌨️ Shortcuts
+              </button>
+              <button
+                onClick={saveCrossword}
+                disabled={!crosswordName.trim()}
+                className="save-btn"
+              >
+                Save Crossword
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1669,12 +1673,8 @@ function CrosswordBuilder() {
                       onMouseMove={(e) => handleCellMouseMove(rowIndex, colIndex, e)}
                       onMouseUp={(e) => handleCellMouseUp(rowIndex, colIndex, e)}
                       onMouseEnter={(e) => {
-                        // Handle block mode drag painting
-                        if (e.buttons === 1 && currentMode === 'block' && !isMouseDragging) {
-                          handleCellClick(rowIndex, colIndex)
-                        }
-                        // Handle selection dragging (only if not in block mode)
-                        if (e.buttons === 1 && isMouseDragging && currentMode !== 'block') {
+                        // Handle selection dragging (works in all modes including block mode)
+                        if (e.buttons === 1 && isMouseDragging) {
                           handleCellMouseMove(rowIndex, colIndex, e)
                         }
                       }}
@@ -1749,16 +1749,6 @@ function CrosswordBuilder() {
             </div>
           </div>
         </div>
-      </div>
-      
-      <div className="shortcuts-button-container">
-        <button 
-          className="shortcuts-btn"
-          onClick={() => setShowShortcuts(true)}
-          title="Keyboard Shortcuts"
-        >
-          ⌨️ Shortcuts
-        </button>
       </div>
 
       {showShortcuts && (
