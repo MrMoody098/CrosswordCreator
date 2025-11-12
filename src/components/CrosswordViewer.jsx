@@ -20,6 +20,12 @@ function CrosswordViewer({ crosswordName = 'default' }) {
 
   // Load crossword CSV files based on name
   useEffect(() => {
+    // Don't try to load reserved names
+    const reservedNames = ['create-crossword', 'CrosswordCreator', 'crosswordcreator']
+    if (reservedNames.includes(crosswordName)) {
+      return
+    }
+    
     const loadPuzzle = async () => {
       try {
         setLoading(true)
@@ -76,7 +82,7 @@ function CrosswordViewer({ crosswordName = 'default' }) {
         setLoading(false)
       }
     }
-
+    
     loadPuzzle()
   }, [crosswordName])
 

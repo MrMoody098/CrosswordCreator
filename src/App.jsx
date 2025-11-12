@@ -29,12 +29,14 @@ function CrosswordViewerWrapper() {
   
   // Prevent reserved names from being treated as crossword names
   // Redirect to home if someone tries to access these routes
-  const reservedNames = ['create-crossword', 'CrosswordCreator']
-  if (reservedNames.includes(crosswordName)) {
+  const reservedNames = ['create-crossword', 'CrosswordCreator', 'crosswordcreator']
+  
+  // Check immediately and redirect before rendering anything
+  if (!crosswordName || reservedNames.includes(crosswordName)) {
     return <Navigate to="/" replace />
   }
   
-  return <CrosswordViewer crosswordName={crosswordName || 'default'} />
+  return <CrosswordViewer crosswordName={crosswordName} />
 }
 
 export default App
