@@ -21,16 +21,24 @@ function Home() {
       const localCrosswords = getCrosswordList()
       
       // Also try to load from server (for backwards compatibility/shared crosswords)
+      // On GitHub Pages, this will fail silently and we'll use localStorage only
       let serverCrosswords = []
       try {
-        const response = await fetch('/api/list-crosswords')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 2000)
+        
+        const response = await fetch('/api/list-crosswords', {
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+        
         if (response.ok) {
           const data = await response.json()
           serverCrosswords = data.crosswords || []
         }
       } catch (serverError) {
-        // Server not available, that's okay
-        console.warn('Server not available, using localStorage only:', serverError)
+        // Server not available (expected on GitHub Pages), silently use localStorage only
+        // This is normal for static site deployments - no error to show
       }
       
       // Combine lists, prioritizing localStorage (remove duplicates)

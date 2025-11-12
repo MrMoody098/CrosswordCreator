@@ -46,8 +46,13 @@ function CrosswordViewer({ crosswordName = 'default' }) {
           const cluesFileName = crosswordName === 'default' ? 'clues.csv' : `${crosswordName}-clues.csv`
           const gridFileName = crosswordName === 'default' ? 'grid.csv' : `${crosswordName}-grid.csv`
 
+          // Use relative paths for GitHub Pages compatibility
+          const basePath = import.meta.env.BASE_URL || '/'
+          const cluesPath = `${basePath}${cluesFileName}`
+          const gridPath = `${basePath}${gridFileName}`
+
           // Load clues CSV
-          const cluesResponse = await fetch(`/${cluesFileName}`)
+          const cluesResponse = await fetch(cluesPath)
           if (!cluesResponse.ok) {
             throw new Error(`Failed to load ${cluesFileName}: ${cluesResponse.status}`)
           }
@@ -56,7 +61,7 @@ function CrosswordViewer({ crosswordName = 'default' }) {
           setClues(parsedClues)
 
           // Load grid CSV
-          const gridResponse = await fetch(`/${gridFileName}`)
+          const gridResponse = await fetch(gridPath)
           if (!gridResponse.ok) {
             throw new Error(`Failed to load ${gridFileName}: ${gridResponse.status}`)
           }
