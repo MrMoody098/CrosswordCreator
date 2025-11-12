@@ -3,12 +3,14 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { getCrosswordList, deleteCrosswordFromLocalStorage, saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage } from '../utils/localStorage'
 import { parseCluesCSV, parseGridCSV, parseCombinedCSV } from '../utils/csvParser'
 import { fetchSharedCrossword, shareCrosswordToSupabase, copyToClipboard } from '../utils/shareApi'
+import CrosswordPreview from './CrosswordPreview'
 import '../App.css'
 import './Home.css'
 
 function Home() {
   const [crosswords, setCrosswords] = useState([])
   const [loading, setLoading] = useState(true)
+  const [gridPreviews, setGridPreviews] = useState({}) // Store grid previews by crossword name
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -143,6 +145,21 @@ function Home() {
       })
       
       setCrosswords(combined)
+      
+      // Load grid previews for all crosswords
+      const previews = {}
+      combined.forEach(crossword => {
+        try {
+          const crosswordData = loadCrosswordFromLocalStorage(crossword.name)
+          if (crosswordData && crosswordData.gridCSV) {
+            const grid = parseGridCSV(crosswordData.gridCSV)
+            previews[crossword.name] = grid
+          }
+        } catch (error) {
+          console.warn(`Failed to load preview for ${crossword.name}:`, error)
+        }
+      })
+      setGridPreviews(previews)
     } catch (error) {
       console.error('Error loading crosswords:', error)
       setCrosswords([])
@@ -452,6 +469,9 @@ function Home() {
                 <div className="card-header">
                   <h3 className="card-title">{crossword.displayName}</h3>
                 </div>
+                {gridPreviews[crossword.name] && (
+                  <CrosswordPreview grid={gridPreviews[crossword.name]} />
+                )}
                 <div className="card-actions">
                   <button
                     className="card-btn play-btn"

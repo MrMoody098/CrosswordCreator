@@ -1,0 +1,85 @@
+.crossword-preview {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 15px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.crossword-preview-empty {
+  width: 100%;
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.preview-grid {
+  display: grid;
+  gap: 1px;
+  border: 2px solid #1a1a1a;
+  background: #1a1a1a;
+  max-width: 150px;
+  max-height: 150px;
+  aspect-ratio: 1;
+}
+
+.preview-cell {
+  aspect-ratio: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: bold;
+  background: #fff;
+  border: none;
+}
+
+.preview-cell-blocked {
+  background: #1a1a1a;
+}
+
+.preview-cell-filled {
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.preview-cell-number {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  font-size: 6px;
+  font-weight: bold;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.preview-cell-letter {
+  font-size: 10px;
+  color: #1a1a1a;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .preview-grid {
+    max-width: 120px;
+    max-height: 120px;
+  }
+
+  .preview-cell-number {
+    font-size: 5px;
+    top: 0.5px;
+    left: 1px;
+  }
+
+  .preview-cell-letter {
+    font-size: 8px;
+  }
+}
+
