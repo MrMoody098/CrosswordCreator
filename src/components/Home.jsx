@@ -152,8 +152,15 @@ function Home() {
         try {
           const crosswordData = loadCrosswordFromLocalStorage(crossword.name)
           if (crosswordData && crosswordData.gridCSV) {
-            const grid = parseGridCSV(crosswordData.gridCSV)
-            previews[crossword.name] = grid
+            try {
+              const grid = parseGridCSV(crosswordData.gridCSV)
+              // Only store if grid is valid and has content
+              if (grid && grid.length > 0 && grid[0] && grid[0].length > 0) {
+                previews[crossword.name] = grid
+              }
+            } catch (parseError) {
+              console.warn(`Failed to parse grid for ${crossword.name}:`, parseError)
+            }
           }
         } catch (error) {
           console.warn(`Failed to load preview for ${crossword.name}:`, error)

@@ -24,9 +24,11 @@
   gap: 1px;
   border: 2px solid #1a1a1a;
   background: #1a1a1a;
-  max-width: 150px;
-  max-height: 150px;
+  width: 100%;
+  max-width: 200px;
+  max-height: 200px;
   aspect-ratio: 1;
+  margin: 0 auto;
 }
 
 .preview-cell {
@@ -43,6 +45,11 @@
 
 .preview-cell-blocked {
   background: #1a1a1a;
+}
+
+.preview-cell-empty {
+  background: #fff;
+  border: 1px solid #eee;
 }
 
 .preview-cell-filled {
