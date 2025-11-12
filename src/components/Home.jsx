@@ -200,56 +200,113 @@ function Home() {
   const crosswordFileRef = useRef(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [importName, setImportName] = useState('')
+  const [importMode, setImportMode] = useState('file') // 'file' or 'share'
+  const [shareIdInput, setShareIdInput] = useState('')
 
   const handleImport = async () => {
-    const crosswordFile = crosswordFileRef.current?.files?.[0]
-
-    if (!crosswordFile) {
-      alert('Please select a crossword CSV file')
-      return
-    }
-
-    if (!importName.trim()) {
-      alert('Please enter a name for the crossword')
-      return
-    }
-
-    try {
-      // Read the combined CSV file
-      const combinedText = await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = (e) => resolve(e.target.result)
-        reader.onerror = reject
-        reader.readAsText(crosswordFile)
-      })
-
-      // Parse the combined CSV file
-      let parsedData
-      try {
-        const { parseCombinedCSV } = await import('../utils/csvParser')
-        parsedData = parseCombinedCSV(combinedText)
-      } catch (parseError) {
-        alert(`Error parsing CSV file: ${parseError.message}\n\nMake sure you're importing a file downloaded from the Crossword Creator (combined format).`)
+    if (importMode === 'share') {
+      // Import from share link
+      if (!shareIdInput.trim()) {
+        alert('Please enter a share ID or share link')
         return
       }
 
-      // Save to localStorage
-      saveCrosswordToLocalStorage(importName, parsedData.gridCSV, parsedData.cluesCSV, {
-        displayName: importName.trim()
-      })
+      // Extract share ID from URL if full link is provided
+      let shareId = shareIdInput.trim()
+      if (shareId.includes('?share=')) {
+        shareId = shareId.split('?share=')[1].split('&')[0]
+      } else if (shareId.includes('/share/')) {
+        shareId = shareId.split('/share/')[1].split('?')[0].split('#')[0]
+      }
 
-      // Reset form
-      setImportName('')
-      setShowImportModal(false)
-      if (crosswordFileRef.current) crosswordFileRef.current.value = ''
+      if (!shareId) {
+        alert('Invalid share link. Please check the link and try again.')
+        return
+      }
 
-      // Reload crosswords list
-      loadCrosswords()
+      try {
+        const result = await fetchSharedCrossword(shareId)
+        
+        if (!result.success) {
+          alert(`Error loading shared crossword: ${result.error}`)
+          return
+        }
 
-      alert('Crossword imported successfully!')
-    } catch (error) {
-      console.error('Error importing crossword:', error)
-      alert(`Error importing crossword: ${error.message}`)
+        // Generate a unique name for the imported crossword
+        const timestamp = Date.now()
+        const importName = result.displayName 
+          ? `${result.displayName}-shared-${timestamp}`.toLowerCase().replace(/[^a-z0-9]/g, '-')
+          : `shared-crossword-${timestamp}`
+
+        // Save to localStorage
+        saveCrosswordToLocalStorage(importName, result.gridCSV, result.cluesCSV, {
+          displayName: result.displayName || `Shared Crossword`
+        })
+
+        // Reset form
+        setShareIdInput('')
+        setShowImportModal(false)
+
+        // Reload crosswords list
+        loadCrosswords()
+
+        // Navigate to the imported crossword
+        navigate(`/${importName}`)
+      } catch (error) {
+        console.error('Error importing shared crossword:', error)
+        alert(`Error importing shared crossword: ${error.message}`)
+      }
+    } else {
+      // Import from CSV file
+      const crosswordFile = crosswordFileRef.current?.files?.[0]
+
+      if (!crosswordFile) {
+        alert('Please select a crossword CSV file')
+        return
+      }
+
+      if (!importName.trim()) {
+        alert('Please enter a name for the crossword')
+        return
+      }
+
+      try {
+        // Read the combined CSV file
+        const combinedText = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = (e) => resolve(e.target.result)
+          reader.onerror = reject
+          reader.readAsText(crosswordFile)
+        })
+
+        // Parse the combined CSV file
+        let parsedData
+        try {
+          const { parseCombinedCSV } = await import('../utils/csvParser')
+          parsedData = parseCombinedCSV(combinedText)
+        } catch (parseError) {
+          alert(`Error parsing CSV file: ${parseError.message}\n\nMake sure you're importing a file downloaded from the Crossword Creator (combined format).`)
+          return
+        }
+
+        // Save to localStorage
+        saveCrosswordToLocalStorage(importName, parsedData.gridCSV, parsedData.cluesCSV, {
+          displayName: importName.trim()
+        })
+
+        // Reset form
+        setImportName('')
+        setShowImportModal(false)
+        if (crosswordFileRef.current) crosswordFileRef.current.value = ''
+
+        // Reload crosswords list
+        loadCrosswords()
+
+        alert('Crossword imported successfully!')
+      } catch (error) {
+        console.error('Error importing crossword:', error)
+        alert(`Error importing crossword: ${error.message}`)
+      }
     }
   }
 
@@ -292,37 +349,90 @@ function Home() {
                 <button className="import-modal-close" onClick={() => setShowImportModal(false)}>×</button>
               </div>
               <div className="import-modal-content">
-                <div className="import-input-group">
-                  <label htmlFor="import-name">Crossword Name:</label>
-                  <input
-                    id="import-name"
-                    type="text"
-                    value={importName}
-                    onChange={(e) => setImportName(e.target.value)}
-                    placeholder="Enter crossword name"
-                    className="import-name-input"
-                  />
-                </div>
-                <div className="import-file-inputs">
-                  <div className="import-file-group">
-                    <label htmlFor="import-crossword-file">Crossword CSV File:</label>
-                    <input
-                      id="import-crossword-file"
-                      type="file"
-                      accept=".csv"
-                      ref={crosswordFileRef}
-                      className="import-file-input"
-                    />
-                    <small style={{ marginTop: '5px', display: 'block', color: '#666', fontStyle: 'italic' }}>
-                      Select the combined CSV file downloaded from the Crossword Creator
-                    </small>
+                {/* Import Mode Toggle */}
+                <div className="import-input-group" style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>Import From:</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      className={`import-btn ${importMode === 'file' ? 'import-btn-primary' : 'import-btn-cancel'}`}
+                      onClick={() => {
+                        setImportMode('file')
+                        setShareIdInput('')
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      CSV File
+                    </button>
+                    <button
+                      className={`import-btn ${importMode === 'share' ? 'import-btn-primary' : 'import-btn-cancel'}`}
+                      onClick={() => {
+                        setImportMode('share')
+                        setImportName('')
+                        if (crosswordFileRef.current) crosswordFileRef.current.value = ''
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      Shared Link
+                    </button>
                   </div>
                 </div>
+
+                {importMode === 'file' ? (
+                  <>
+                    <div className="import-input-group">
+                      <label htmlFor="import-name">Crossword Name:</label>
+                      <input
+                        id="import-name"
+                        type="text"
+                        value={importName}
+                        onChange={(e) => setImportName(e.target.value)}
+                        placeholder="Enter crossword name"
+                        className="import-name-input"
+                      />
+                    </div>
+                    <div className="import-file-inputs">
+                      <div className="import-file-group">
+                        <label htmlFor="import-crossword-file">Crossword CSV File:</label>
+                        <input
+                          id="import-crossword-file"
+                          type="file"
+                          accept=".csv"
+                          ref={crosswordFileRef}
+                          className="import-file-input"
+                        />
+                        <small style={{ marginTop: '5px', display: 'block', color: '#666', fontStyle: 'italic' }}>
+                          Select the combined CSV file downloaded from the Crossword Creator
+                        </small>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="import-input-group">
+                    <label htmlFor="share-id-input">Share Link or Share ID:</label>
+                    <input
+                      id="share-id-input"
+                      type="text"
+                      value={shareIdInput}
+                      onChange={(e) => setShareIdInput(e.target.value)}
+                      placeholder="Paste share link or enter share ID (e.g., ABC12345)"
+                      className="import-name-input"
+                    />
+                    <small style={{ marginTop: '5px', display: 'block', color: '#666', fontStyle: 'italic' }}>
+                      Enter a share link (e.g., yoursite.com?share=ABC12345) or just the share ID
+                    </small>
+                  </div>
+                )}
+
                 <div className="import-modal-buttons">
                   <button className="import-btn import-btn-primary" onClick={handleImport}>
                     Import
                   </button>
-                  <button className="import-btn import-btn-cancel" onClick={() => setShowImportModal(false)}>
+                  <button className="import-btn import-btn-cancel" onClick={() => {
+                    setShowImportModal(false)
+                    setImportMode('file')
+                    setShareIdInput('')
+                    setImportName('')
+                  }}>
                     Cancel
                   </button>
                 </div>
