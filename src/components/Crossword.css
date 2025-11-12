@@ -103,12 +103,15 @@
   .crossword-grid {
     padding: 1px;
     border-width: 2px;
+    scroll-margin-top: 10px; /* Space for header when scrolling into view */
   }
 
   .cell {
     width: 32px;
     height: 32px;
     font-size: 16px;
+    min-width: 32px; /* Prevent shrinking */
+    min-height: 32px;
   }
   
   .cell-letter {
@@ -119,6 +122,11 @@
     font-size: 8px;
     top: 1px;
     left: 2px;
+  }
+
+  /* Ensure grid container allows proper scrolling */
+  .crossword-grid:focus-within {
+    outline: none;
   }
 }
 

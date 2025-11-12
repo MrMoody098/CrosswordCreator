@@ -124,6 +124,23 @@ function CrosswordViewer({ crosswordName = 'default' }) {
     }
   }, [grid, selectedCell, clues])
 
+  // Scroll crossword grid into view on mobile when cell is selected
+  useEffect(() => {
+    if (selectedCell && window.innerWidth <= 768) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        const crosswordGrid = document.querySelector('.crossword-grid')
+        if (crosswordGrid) {
+          crosswordGrid.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          })
+        }
+      }, 100)
+    }
+  }, [selectedCell])
+
   const handleCellClick = (row, col) => {
     const cell = grid[row][col]
     if (!cell || cell === '.') return
@@ -250,23 +267,77 @@ function CrosswordViewer({ crosswordName = 'default' }) {
     let newRow = row + rowDelta
     let newCol = col + colDelta
 
-    // Find next valid cell (like CrosswordBuilder)
-    // Keep searching until we find a valid cell or hit the boundary
+    // First, try to find a cell in the exact direction (straight line)
     while (newRow >= 0 && newRow < grid.length && 
            newCol >= 0 && newCol < (grid[0]?.length || 0)) {
       const cell = grid[newRow]?.[newCol]
-      // Skip blocked cells, only move to valid cells
+      // Skip blocked cells ('.'), only move to valid cells
       if (cell && cell !== '.' && typeof cell === 'object') {
         setSelectedCell({ row: newRow, col: newCol })
+        // Update direction if the new cell has a different word in that direction
+        if (isAcross && cell.across) {
+          setSelectedDirection('across')
+        } else if (!isAcross && cell.down) {
+          setSelectedDirection('down')
+        }
         return
       }
-      // Continue searching in the same direction
+      // Continue searching in the same direction, skipping blocked cells
       newRow += rowDelta
       newCol += colDelta
     }
     
+    // If no cell found in straight line, search nearby cells (including diagonal)
+    // This handles cases where the next valid cell is not in the exact same row/column
+    const searchRadius = 3 // Search up to 3 cells away in any direction
+    let closestCell = null
+    let closestDistance = Infinity
+
+    for (let dr = -searchRadius; dr <= searchRadius; dr++) {
+      for (let dc = -searchRadius; dc <= searchRadius; dc++) {
+        // Skip the current cell and cells in the opposite direction
+        if (dr === 0 && dc === 0) continue
+        if (isAcross && dc === 0) continue // Skip same column for across
+        if (!isAcross && dr === 0) continue // Skip same row for down
+        
+        // Prefer cells in the general direction we're moving
+        const isInDirection = isAcross 
+          ? (direction > 0 ? dc > 0 : dc < 0)
+          : (direction > 0 ? dr > 0 : dr < 0)
+        
+        if (!isInDirection) continue
+
+        const checkRow = row + dr
+        const checkCol = col + dc
+
+        if (checkRow >= 0 && checkRow < grid.length && 
+            checkCol >= 0 && checkCol < (grid[0]?.length || 0)) {
+          const cell = grid[checkRow]?.[checkCol]
+          if (cell && cell !== '.' && typeof cell === 'object') {
+            // Calculate distance (prefer closer cells)
+            const distance = Math.abs(dr) + Math.abs(dc)
+            if (distance < closestDistance) {
+              closestDistance = distance
+              closestCell = { row: checkRow, col: checkCol, cell }
+            }
+          }
+        }
+      }
+    }
+
+    // If we found a nearby cell, move to it
+    if (closestCell) {
+      setSelectedCell({ row: closestCell.row, col: closestCell.col })
+      // Update direction based on the new cell
+      if (isAcross && closestCell.cell.across) {
+        setSelectedDirection('across')
+      } else if (!isAcross && closestCell.cell.down) {
+        setSelectedDirection('down')
+      }
+      return
+    }
+    
     // If we didn't find a valid cell, don't move (stay on current cell)
-    // This prevents moving off the grid or into invalid areas
   }
 
   const handleClueClick = (number, direction) => {

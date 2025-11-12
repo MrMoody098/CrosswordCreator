@@ -2,6 +2,9 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 5px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 .app-header {
@@ -73,6 +76,8 @@
   justify-content: center;
   align-items: flex-start;
   flex-wrap: wrap;
+  flex: 1;
+  min-height: 0;
 }
 
 .crossword-section {
@@ -283,11 +288,14 @@
 @media (max-width: 768px) {
   .app {
     padding: 5px;
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
   }
 
   .app-header {
     padding: 10px 15px;
     margin-bottom: 8px;
+    flex-shrink: 0;
   }
 
   .header-nav {
@@ -313,54 +321,53 @@
   .game-container {
     gap: 15px;
     padding: 0 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .crossword-section {
     flex-direction: column;
     width: 100%;
     align-items: center;
+    order: 1; /* Crossword grid first on mobile */
   }
 
+  /* Hide instructions on mobile to save space for grid */
   .instructions-container {
-    width: 100%;
-    min-width: unset;
-    order: 2;
-  }
-
-  .how-to-play {
-    padding: 12px;
-    width: 100%;
-  }
-
-  .how-to-play h3 {
-    font-size: 14px;
-  }
-
-  .how-to-play li {
-    font-size: 12px;
-    margin-bottom: 6px;
-  }
-
-  .check-button {
-    padding: 12px 20px;
-    font-size: 13px;
-  }
-
-  .reset-button {
-    padding: 10px;
-    font-size: 16px;
-    min-width: 44px;
-    height: 44px;
+    display: none;
   }
 
   .clues-section {
-    order: 1;
+    order: 2; /* Clues below grid on mobile */
     width: 100%;
     min-width: unset;
+    max-height: 40vh; /* Limit height so grid stays visible */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ensure crossword grid is scrollable and positioned at top */
+  .crossword-section > div:last-child {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 0;
   }
 }
 
 @media (max-width: 480px) {
+  .app {
+    padding: 3px;
+  }
+
+  .app-header {
+    padding: 8px 10px;
+    margin-bottom: 5px;
+  }
+
   .newspaper-title {
     font-size: 1.1rem;
   }
@@ -374,9 +381,13 @@
     padding: 5px 10px;
   }
 
-  .check-button {
-    padding: 10px 16px;
-    font-size: 12px;
+  .game-container {
+    gap: 10px;
+    padding: 0 3px;
+  }
+
+  .clues-section {
+    max-height: 35vh; /* Even smaller on very small screens */
   }
 }
 
