@@ -130,8 +130,62 @@
 }
 
 @media (max-width: 768px) {
+  .home-container {
+    padding: 15px;
+  }
+
+  .home-actions {
+    margin-bottom: 20px;
+  }
+
+  .home-btn {
+    padding: 14px 24px;
+    font-size: 15px;
+    width: 100%;
+    max-width: 300px;
+  }
+
   .crosswords-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+    margin-top: 15px;
+  }
+
+  .crossword-card {
+    padding: 15px;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  .card-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card-btn {
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    padding: 10px;
+  }
+
+  .home-btn {
+    font-size: 14px;
+    padding: 12px 20px;
+  }
+
+  .crossword-card {
+    padding: 12px;
+  }
+
+  .card-title {
+    font-size: 1rem;
   }
 }
 

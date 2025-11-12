@@ -126,3 +126,73 @@
   font-weight: bold;
 }
 
+@media (max-width: 768px) {
+  .clues-container {
+    border-width: 2px;
+  }
+
+  .tab {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  .clues-list {
+    padding: 12px;
+  }
+
+  .clues-title {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+
+  .clues-content {
+    max-height: 300px;
+  }
+
+  .clue-item {
+    padding: 10px 8px;
+    margin-bottom: 6px;
+  }
+
+  .clue-number {
+    font-size: 14px;
+    min-width: 22px;
+    margin-right: 8px;
+  }
+
+  .clue-text {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .clues-list {
+    padding: 10px;
+  }
+
+  .clues-title {
+    font-size: 1rem;
+  }
+
+  .clue-item {
+    padding: 8px 6px;
+    margin-bottom: 5px;
+  }
+
+  .clue-number {
+    font-size: 13px;
+    min-width: 20px;
+    margin-right: 6px;
+  }
+
+  .clue-text {
+    font-size: 13px;
+  }
+}
+

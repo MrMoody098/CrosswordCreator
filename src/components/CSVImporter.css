@@ -62,3 +62,57 @@
   margin-top: 10px;
 }
 
+@media (max-width: 768px) {
+  .csv-importer {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .csv-importer h3 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .file-inputs {
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 12px;
+  }
+
+  .file-input-group {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .file-input-group input[type="file"] {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .csv-help {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .csv-importer {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .csv-importer h3 {
+    font-size: 0.9rem;
+  }
+
+  .file-input-group input[type="file"] {
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .csv-help {
+    padding: 10px;
+    font-size: 0.8rem;
+  }
+}
+

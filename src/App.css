@@ -280,3 +280,103 @@
   }
 }
 
+@media (max-width: 768px) {
+  .app {
+    padding: 5px;
+  }
+
+  .app-header {
+    padding: 10px 15px;
+    margin-bottom: 8px;
+  }
+
+  .header-nav {
+    position: static;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .home-link {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .newspaper-title {
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+  }
+
+  .game-container {
+    gap: 15px;
+    padding: 0 5px;
+  }
+
+  .crossword-section {
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+  }
+
+  .instructions-container {
+    width: 100%;
+    min-width: unset;
+    order: 2;
+  }
+
+  .how-to-play {
+    padding: 12px;
+    width: 100%;
+  }
+
+  .how-to-play h3 {
+    font-size: 14px;
+  }
+
+  .how-to-play li {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .check-button {
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+
+  .reset-button {
+    padding: 10px;
+    font-size: 16px;
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .clues-section {
+    order: 1;
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+@media (max-width: 480px) {
+  .newspaper-title {
+    font-size: 1.1rem;
+  }
+
+  .subtitle {
+    font-size: 0.7rem;
+  }
+
+  .home-link {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .check-button {
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+}
+
