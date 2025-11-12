@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useParams, Navigate } from 'react-router-dom'
 import CrosswordViewer from './components/CrosswordViewer'
 import CrosswordBuilder from './components/CrosswordBuilder'
 import Home from './components/Home'
@@ -7,7 +7,11 @@ import './App.css'
 
 function App() {
   // Use base URL from Vite config (empty for dev, /CrosswordCreator/ for GitHub Pages)
-  const basePath = import.meta.env.BASE_URL || '/'
+  // Remove trailing slash for BrowserRouter basename
+  let basePath = import.meta.env.BASE_URL || '/'
+  if (basePath.endsWith('/') && basePath !== '/') {
+    basePath = basePath.slice(0, -1)
+  }
   
   return (
     <BrowserRouter basename={basePath}>
@@ -22,6 +26,14 @@ function App() {
 
 function CrosswordViewerWrapper() {
   const { crosswordName } = useParams()
+  
+  // Prevent reserved names from being treated as crossword names
+  // Redirect to home if someone tries to access these routes
+  const reservedNames = ['create-crossword', 'CrosswordCreator']
+  if (reservedNames.includes(crosswordName)) {
+    return <Navigate to="/" replace />
+  }
+  
   return <CrosswordViewer crosswordName={crosswordName || 'default'} />
 }
 
