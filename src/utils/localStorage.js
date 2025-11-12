@@ -238,3 +238,108 @@ export function isWordleLastWordForDate(currentDate) {
   return lastWord && lastWord.date === currentDate
 }
 
+// Crossword Builder state persistence
+const BUILDER_STATE_KEY = 'crossword_builder_state'
+
+export function saveBuilderState(state) {
+  try {
+    localStorage.setItem(BUILDER_STATE_KEY, JSON.stringify(state))
+    return { success: true }
+  } catch (error) {
+    console.error('Error saving builder state:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export function loadBuilderState() {
+  try {
+    const stateStr = localStorage.getItem(BUILDER_STATE_KEY)
+    return stateStr ? JSON.parse(stateStr) : null
+  } catch (error) {
+    console.error('Error loading builder state:', error)
+    return null
+  }
+}
+
+export function clearBuilderState() {
+  try {
+    localStorage.removeItem(BUILDER_STATE_KEY)
+    return { success: true }
+  } catch (error) {
+    console.error('Error clearing builder state:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Wordle game state persistence
+const WORDLE_STATE_KEY = 'wordle_game_state'
+
+export function saveWordleState(state) {
+  try {
+    localStorage.setItem(WORDLE_STATE_KEY, JSON.stringify(state))
+    return { success: true }
+  } catch (error) {
+    console.error('Error saving wordle state:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export function loadWordleState() {
+  try {
+    const stateStr = localStorage.getItem(WORDLE_STATE_KEY)
+    return stateStr ? JSON.parse(stateStr) : null
+  } catch (error) {
+    console.error('Error loading wordle state:', error)
+    return null
+  }
+}
+
+export function clearWordleState() {
+  try {
+    localStorage.removeItem(WORDLE_STATE_KEY)
+    return { success: true }
+  } catch (error) {
+    console.error('Error clearing wordle state:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Crossword Viewer state persistence
+const VIEWER_STATE_KEY_PREFIX = 'crossword_viewer_state_'
+
+export function saveViewerState(crosswordName, state) {
+  try {
+    const normalizedName = crosswordName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-')
+    const key = `${VIEWER_STATE_KEY_PREFIX}${normalizedName}`
+    localStorage.setItem(key, JSON.stringify(state))
+    return { success: true }
+  } catch (error) {
+    console.error('Error saving viewer state:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export function loadViewerState(crosswordName) {
+  try {
+    const normalizedName = crosswordName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-')
+    const key = `${VIEWER_STATE_KEY_PREFIX}${normalizedName}`
+    const stateStr = localStorage.getItem(key)
+    return stateStr ? JSON.parse(stateStr) : null
+  } catch (error) {
+    console.error('Error loading viewer state:', error)
+    return null
+  }
+}
+
+export function clearViewerState(crosswordName) {
+  try {
+    const normalizedName = crosswordName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-')
+    const key = `${VIEWER_STATE_KEY_PREFIX}${normalizedName}`
+    localStorage.removeItem(key)
+    return { success: true }
+  } catch (error) {
+    console.error('Error clearing viewer state:', error)
+    return { success: false, error: error.message }
+  }
+}
+

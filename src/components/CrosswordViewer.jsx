@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Crossword from './Crossword'
 import ClueList from './ClueList'
 import { parseCluesCSV, parseGridCSV } from '../utils/csvParser'
-import { loadCrosswordFromLocalStorage } from '../utils/localStorage'
+import { loadCrosswordFromLocalStorage, saveViewerState, loadViewerState, clearViewerState } from '../utils/localStorage'
 import '../App.css'
 
 function CrosswordViewer({ crosswordName = 'default' }) {
@@ -17,6 +17,44 @@ function CrosswordViewer({ crosswordName = 'default' }) {
   const [isComplete, setIsComplete] = useState(false)
   const [checkStatus, setCheckStatus] = useState(null) // null, 'wrong', 'correct'
   const [displayName, setDisplayName] = useState(null)
+  const location = useLocation()
+
+  // Load state from localStorage on mount
+  useEffect(() => {
+    const savedState = loadViewerState(crosswordName)
+    if (savedState) {
+      setUserAnswers(savedState.userAnswers || {})
+      setSelectedCell(savedState.selectedCell || null)
+      setSelectedDirection(savedState.selectedDirection || 'across')
+    }
+  }, [crosswordName])
+
+  // Save state to localStorage when it changes (debounced)
+  useEffect(() => {
+    if (!crosswordName || loading) return // Don't save until crossword is loaded
+    
+    const timeoutId = setTimeout(() => {
+      const stateToSave = {
+        userAnswers,
+        selectedCell,
+        selectedDirection
+      }
+      saveViewerState(crosswordName, stateToSave)
+    }, 500) // Debounce by 500ms
+
+    return () => clearTimeout(timeoutId)
+  }, [crosswordName, userAnswers, selectedCell, selectedDirection, loading])
+
+  // Clear state when navigating away from this crossword
+  useEffect(() => {
+    return () => {
+      // Clear state when component unmounts (navigating away)
+      const currentPath = window.location.pathname
+      if (!currentPath.includes(crosswordName)) {
+        clearViewerState(crosswordName)
+      }
+    }
+  }, [crosswordName])
 
   // Load crossword CSV files based on name
   useEffect(() => {

@@ -1,14 +1,16 @@
-import React, { useState, useCallback, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { gridToCSV, cluesToCSV, downloadCSV, saveCSVToServer } from '../utils/crosswordBuilder'
-import { saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage } from '../utils/localStorage'
+import { saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage, saveBuilderState, loadBuilderState, clearBuilderState } from '../utils/localStorage'
 import { parseCluesCSV, parseGridCSV } from '../utils/csvParser'
+import { generateShareableLink, copyToClipboard } from '../utils/shareUtils'
 import './CrosswordBuilder.css'
 
 const GRID_SIZE = 15
 
 function CrosswordBuilder() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [gridSize, setGridSize] = useState(GRID_SIZE)
   const [grid, setGrid] = useState(() => {
     const initialGrid = []
@@ -43,6 +45,8 @@ function CrosswordBuilder() {
   const [showPostSaveModal, setShowPostSaveModal] = useState(false) // For showing post-save options
   const [savedCrosswordName, setSavedCrosswordName] = useState(null) // Store saved crossword name for navigation
   const [showImportModal, setShowImportModal] = useState(false) // For showing import modal
+  const [shareableLink, setShareableLink] = useState(null) // Store shareable link
+  const [linkCopied, setLinkCopied] = useState(false) // Track if link was copied
   const crosswordFileRef = useRef(null)
 
   const handleCellClick = (row, col) => {
@@ -720,6 +724,11 @@ function CrosswordBuilder() {
         const combinedCSV = `=== GRID DATA ===\n${gridCSV}\n\n=== CLUES DATA ===\n${cluesCSV}`
         downloadCSV(combinedCSV, `${name}-combined.csv`)
       }
+      
+      // Generate shareable link
+      const shareLink = generateShareableLink(gridCSV, cluesCSV, displayName)
+      setShareableLink(shareLink)
+      setLinkCopied(false)
       
       // Close save modal and show post-save modal
       setShowSaveModal(false)
@@ -1491,6 +1500,51 @@ function CrosswordBuilder() {
     }
   }, [handleKeyPress])
 
+  // Load state from localStorage on mount
+  useEffect(() => {
+    const savedState = loadBuilderState()
+    if (savedState) {
+      if (savedState.gridSize) setGridSize(savedState.gridSize)
+      if (savedState.grid) setGrid(savedState.grid)
+      if (savedState.clues) setClues(savedState.clues)
+      if (savedState.crosswordName) setCrosswordName(savedState.crosswordName)
+      if (savedState.currentMode) setCurrentMode(savedState.currentMode)
+      if (savedState.currentDirection) setCurrentDirection(savedState.currentDirection)
+    }
+  }, [])
+
+  // Save state to localStorage when it changes (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const stateToSave = {
+        gridSize,
+        grid,
+        clues,
+        crosswordName,
+        currentMode,
+        currentDirection
+      }
+      saveBuilderState(stateToSave)
+    }, 500) // Debounce by 500ms
+
+    return () => clearTimeout(timeoutId)
+  }, [gridSize, grid, clues, crosswordName, currentMode, currentDirection])
+
+  // Clear state when navigating away from builder page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Don't clear on page refresh - let the state persist
+    }
+    
+    return () => {
+      // Clear state when component unmounts (navigating away)
+      // But only if we're not on the builder page anymore
+      if (!window.location.pathname.includes('/create-crossword')) {
+        clearBuilderState()
+      }
+    }
+  }, [])
+
   const addClue = (number, direction) => {
     const newClues = { ...clues }
     const clueList = newClues[direction]
@@ -2005,6 +2059,49 @@ function CrosswordBuilder() {
             </div>
             <div className="save-modal-content">
               <p>Your crossword has been saved successfully.</p>
+              
+              {shareableLink && (
+                <div className="share-link-section" style={{ marginBottom: '20px' }}>
+                  <label htmlFor="share-link-input" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '14px', color: '#1a1a1a' }}>
+                    Shareable Link:
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      id="share-link-input"
+                      type="text"
+                      value={shareableLink}
+                      readOnly
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        border: '2px solid #1a1a1a',
+                        fontFamily: 'Georgia, Times New Roman, serif',
+                        fontSize: '12px',
+                        background: '#fff'
+                      }}
+                    />
+                    <button
+                      className="save-modal-btn save-btn-primary"
+                      onClick={async () => {
+                        const success = await copyToClipboard(shareableLink)
+                        if (success) {
+                          setLinkCopied(true)
+                          setTimeout(() => setLinkCopied(false), 2000)
+                        } else {
+                          alert('Failed to copy link. Please copy it manually.')
+                        }
+                      }}
+                      style={{ whiteSpace: 'nowrap', minWidth: '100px' }}
+                    >
+                      {linkCopied ? '✓ Copied!' : 'Copy Link'}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#666', margin: 0, fontStyle: 'italic' }}>
+                    Share this link with others to let them play your crossword!
+                  </p>
+                </div>
+              )}
+              
               <div className="save-modal-buttons">
                 <button
                   className="save-modal-btn save-btn-primary"

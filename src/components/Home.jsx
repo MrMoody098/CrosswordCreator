@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { getCrosswordList, deleteCrosswordFromLocalStorage, saveCrosswordToLocalStorage } from '../utils/localStorage'
-import { parseCluesCSV, parseGridCSV } from '../utils/csvParser'
+import { parseCluesCSV, parseGridCSV, parseCombinedCSV } from '../utils/csvParser'
+import { decodeCrosswordData } from '../utils/shareUtils'
 import '../App.css'
 import './Home.css'
 
@@ -9,10 +10,47 @@ function Home() {
   const [crosswords, setCrosswords] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
     loadCrosswords()
   }, [])
+
+  // Handle shared crossword links
+  useEffect(() => {
+    const shareParam = searchParams.get('share')
+    if (shareParam) {
+      handleSharedCrossword(shareParam)
+      // Remove the share parameter from URL
+      setSearchParams({})
+    }
+  }, [searchParams])
+
+  const handleSharedCrossword = async (encodedData) => {
+    try {
+      const { gridCSV, cluesCSV, displayName } = decodeCrosswordData(encodedData)
+      
+      // Generate a unique name for the imported crossword
+      const timestamp = Date.now()
+      const importName = displayName 
+        ? `${displayName}-shared-${timestamp}`.toLowerCase().replace(/[^a-z0-9]/g, '-')
+        : `shared-crossword-${timestamp}`
+      
+      // Save to localStorage
+      saveCrosswordToLocalStorage(importName, gridCSV, cluesCSV, {
+        displayName: displayName || `Shared Crossword`
+      })
+      
+      // Reload crosswords list
+      loadCrosswords()
+      
+      // Navigate to the shared crossword
+      navigate(`/${importName}`)
+    } catch (error) {
+      console.error('Error importing shared crossword:', error)
+      alert(`Error loading shared crossword: ${error.message}`)
+    }
+  }
 
   const loadCrosswords = async () => {
     try {
