@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useParams, Navigate, useLocation } from '
 import CrosswordViewer from './components/CrosswordViewer'
 import CrosswordBuilder from './components/CrosswordBuilder'
 import Home from './components/Home'
+import Wordle from './components/Wordle'
 import './App.css'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/create-crossword" element={<CrosswordBuilder />} />
+        <Route path="/daily-wordle" element={<Wordle />} />
         <Route path="/:crosswordName" element={<CrosswordViewerWrapper />} />
       </Routes>
     </BrowserRouter>
@@ -30,7 +32,7 @@ function CrosswordViewerWrapper() {
   
   // Prevent reserved names from being treated as crossword names
   // Redirect to home if someone tries to access these routes
-  const reservedNames = ['create-crossword', 'CrosswordCreator', 'crosswordcreator']
+  const reservedNames = ['create-crossword', 'daily-wordle', 'CrosswordCreator', 'crosswordcreator']
   
   // Also check if the pathname itself suggests we're at the root
   // This handles cases where basename might not be working correctly

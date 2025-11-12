@@ -194,3 +194,47 @@ export function getStorageInfo() {
   }
 }
 
+// Wordle localStorage utilities
+
+const WORDLE_LAST_WORD_KEY = 'wordle_last_word'
+
+/**
+ * Save the last seen wordle word with date
+ * @param {string} word - The word
+ * @param {string} date - The date string (YYYY-MM-DD format)
+ */
+export function saveWordleLastWord(word, date) {
+  try {
+    const data = { word, date }
+    localStorage.setItem(WORDLE_LAST_WORD_KEY, JSON.stringify(data))
+    return { success: true }
+  } catch (error) {
+    console.error('Error saving wordle last word:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Get the last seen wordle word
+ * @returns {object|null} Object with word and date, or null if not found
+ */
+export function getWordleLastWord() {
+  try {
+    const dataStr = localStorage.getItem(WORDLE_LAST_WORD_KEY)
+    return dataStr ? JSON.parse(dataStr) : null
+  } catch (error) {
+    console.error('Error loading wordle last word:', error)
+    return null
+  }
+}
+
+/**
+ * Check if the last seen word matches the current date
+ * @param {string} currentDate - Current date string (YYYY-MM-DD format)
+ * @returns {boolean} True if last word is for current date
+ */
+export function isWordleLastWordForDate(currentDate) {
+  const lastWord = getWordleLastWord()
+  return lastWord && lastWord.date === currentDate
+}
+

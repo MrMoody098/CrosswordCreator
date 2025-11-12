@@ -133,6 +133,9 @@ function Home() {
           <button className="home-btn create-btn" onClick={handleCreate}>
             Create New Crossword
           </button>
+          <button className="home-btn wordle-btn" onClick={() => navigate('/daily-wordle')}>
+            Daily Wordl
+          </button>
         </div>
 
         <div className="crosswords-grid">

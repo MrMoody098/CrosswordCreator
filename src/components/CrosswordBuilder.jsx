@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { gridToCSV, cluesToCSV, downloadCSV, saveCSVToServer } from '../utils/crosswordBuilder'
 import { saveCrosswordToLocalStorage } from '../utils/localStorage'
 import './CrosswordBuilder.css'
@@ -7,6 +7,7 @@ import './CrosswordBuilder.css'
 const GRID_SIZE = 15
 
 function CrosswordBuilder() {
+  const navigate = useNavigate()
   const [gridSize, setGridSize] = useState(GRID_SIZE)
   const [grid, setGrid] = useState(() => {
     const initialGrid = []
@@ -37,6 +38,9 @@ function CrosswordBuilder() {
   // selectedClueDirection is now synced with currentDirection - no separate state needed
   const [nameInputError, setNameInputError] = useState(false) // For flashing/shaking animation
   const [showShortcuts, setShowShortcuts] = useState(false) // For showing shortcuts popup
+  const [showSaveModal, setShowSaveModal] = useState(false) // For showing save confirmation modal
+  const [showPostSaveModal, setShowPostSaveModal] = useState(false) // For showing post-save options
+  const [savedCrosswordName, setSavedCrosswordName] = useState(null) // Store saved crossword name for navigation
 
   const handleCellClick = (row, col) => {
     // Don't handle click if we just finished a drag - the drag handler manages that
@@ -652,14 +656,7 @@ function CrosswordBuilder() {
     }, 0)
   }, [clues, gridSize, renumberGrid])
 
-  const saveCrossword = useCallback(async () => {
-    if (!crosswordName.trim()) {
-      // Flash and shake the input instead of alert
-      setNameInputError(true)
-      setTimeout(() => setNameInputError(false), 600)
-      return
-    }
-
+  const performSave = useCallback(async (shouldDownloadCSV = false) => {
     // Collect all numbers that actually exist on the grid
     const gridNumbers = new Set()
     grid.forEach(row => {
@@ -715,10 +712,20 @@ function CrosswordBuilder() {
         console.warn('Server save failed (this is okay if server is not running):', serverError)
       }
       
-      alert(`Crossword "${displayName}" saved successfully to your local storage! Visit /${name} to play it.`)
+      // Download combined CSV if requested
+      if (shouldDownloadCSV) {
+        const combinedCSV = `=== GRID DATA ===\n${gridCSV}\n\n=== CLUES DATA ===\n${cluesCSV}`
+        downloadCSV(combinedCSV, `${name}-combined.csv`)
+      }
+      
+      // Close save modal and show post-save modal
+      setShowSaveModal(false)
+      setSavedCrosswordName(name)
+      setShowPostSaveModal(true)
     } catch (error) {
       console.error('Error saving crossword:', error)
       alert(`Error saving crossword: ${error.message}`)
+      setShowSaveModal(false)
     }
   }, [grid, clues, crosswordName])
 
@@ -994,7 +1001,12 @@ function CrosswordBuilder() {
       if (e.key === 's' || e.key === 'S') {
         e.preventDefault()
         e.stopPropagation()
-        saveCrossword()
+        if (crosswordName.trim()) {
+          setShowSaveModal(true)
+        } else {
+          setNameInputError(true)
+          setTimeout(() => setNameInputError(false), 600)
+        }
         return
       }
       
@@ -1384,7 +1396,7 @@ function CrosswordBuilder() {
         }
       }
     }
-      }, [selectedCell, currentMode, currentDirection, grid, gridSize, handlePlaceWord, deleteWord, clues, updateHintsFromNumbers, moveToNextCell, saveCrossword, clearGrid, isSelecting, selectionStart, selectionEnd, extendSelectionAnyDirection, copySelection, pasteSelection, deleteSelection, fillSelection, clearSelection, copiedCells, hasChangedDirection, lastShiftDirection])
+      }, [selectedCell, currentMode, currentDirection, grid, gridSize, handlePlaceWord, deleteWord, clues, updateHintsFromNumbers, moveToNextCell, clearGrid, isSelecting, selectionStart, selectionEnd, extendSelectionAnyDirection, copySelection, pasteSelection, deleteSelection, fillSelection, clearSelection, copiedCells, hasChangedDirection, lastShiftDirection, crosswordName])
 
   React.useEffect(() => {
     const handleKeyUp = (e) => {
@@ -1646,7 +1658,14 @@ function CrosswordBuilder() {
                 ⌨️ Shortcuts
               </button>
               <button
-                onClick={saveCrossword}
+                onClick={() => {
+                  if (!crosswordName.trim()) {
+                    setNameInputError(true)
+                    setTimeout(() => setNameInputError(false), 600)
+                    return
+                  }
+                  setShowSaveModal(true)
+                }}
                 disabled={!crosswordName.trim()}
                 className="save-btn"
               >
@@ -1852,6 +1871,71 @@ function CrosswordBuilder() {
                   <li>Use Block mode to create black squares</li>
                   <li>Numbers are automatically ordered from top-left to bottom-right</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Confirmation Modal */}
+      {showSaveModal && (
+        <div className="shortcuts-modal-overlay" onClick={() => setShowSaveModal(false)}>
+          <div className="save-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="save-modal-header">
+              <h2>Save Crossword</h2>
+            </div>
+            <div className="save-modal-content">
+              <p>Do you want to save this crossword to browser storage?</p>
+              <div className="save-modal-buttons">
+                <button
+                  className="save-modal-btn save-btn-primary"
+                  onClick={() => performSave(false)}
+                >
+                  Save
+                </button>
+                <button
+                  className="save-modal-btn save-btn-primary"
+                  onClick={() => performSave(true)}
+                >
+                  Save and Download CSV
+                </button>
+              </div>
+              <button
+                className="save-modal-btn save-btn-cancel"
+                onClick={() => setShowSaveModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Post-Save Modal */}
+      {showPostSaveModal && (
+        <div className="shortcuts-modal-overlay" onClick={() => setShowPostSaveModal(false)}>
+          <div className="save-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="save-modal-header">
+              <h2>Crossword Saved!</h2>
+            </div>
+            <div className="save-modal-content">
+              <p>Your crossword has been saved successfully.</p>
+              <div className="save-modal-buttons">
+                <button
+                  className="save-modal-btn save-btn-primary"
+                  onClick={() => {
+                    setShowPostSaveModal(false)
+                    navigate(`/${savedCrosswordName}`)
+                  }}
+                >
+                  Play Now
+                </button>
+                <button
+                  className="save-modal-btn save-btn-primary"
+                  onClick={() => setShowPostSaveModal(false)}
+                >
+                  Continue Editing
+                </button>
               </div>
             </div>
           </div>

@@ -577,6 +577,123 @@
   line-height: 1.5;
 }
 
+/* Save Modal Styles */
+.save-modal {
+  background: #fff;
+  border: 3px solid #1a1a1a;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.save-modal-header {
+  padding: 20px;
+  border-bottom: 2px solid #1a1a1a;
+  background: #f5f5f0;
+}
+
+.save-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.save-modal-content {
+  padding: 20px;
+}
+
+.save-modal-content p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.save-modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  justify-content: center;
+}
+
+.save-modal-btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: bold;
+  border: 2px solid #1a1a1a;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.save-btn-primary {
+  background: #1a1a1a;
+  color: #fff;
+  flex: 1;
+}
+
+.save-btn-primary:hover {
+  background: #333;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.save-btn-cancel {
+  background: #fff;
+  color: #dc3545;
+  border-color: #dc3545;
+  width: 100%;
+}
+
+.save-btn-cancel:hover {
+  background: #dc3545;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+@media (max-width: 768px) {
+  .save-modal {
+    width: 95%;
+    max-width: none;
+  }
+
+  .save-modal-header {
+    padding: 15px;
+  }
+
+  .save-modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .save-modal-content {
+    padding: 15px;
+  }
+
+  .save-modal-content p {
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  .save-modal-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .save-modal-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+    width: 100%;
+  }
+}
+
 @media (max-width: 1200px) {
   .builder-container {
     flex-direction: column;

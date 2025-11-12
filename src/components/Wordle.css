@@ -1,0 +1,290 @@
+.wordle-container {
+  max-width: 600px;
+  margin: 10px auto;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.wordle-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.wordle-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.wordle-cell {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #1a1a1a;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bold;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.wordle-cell-empty {
+  background: #fff;
+  border-color: #ccc;
+}
+
+.wordle-cell-typing {
+  background: #fff;
+  border-color: #1a1a1a;
+  border-width: 3px;
+}
+
+.wordle-cell-correct {
+  background: #28a745;
+  border-color: #28a745;
+  color: #fff;
+}
+
+.wordle-cell-present {
+  background: #ffc107;
+  border-color: #ffc107;
+  color: #1a1a1a;
+}
+
+.wordle-cell-absent {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: #fff;
+}
+
+.wordle-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 0;
+}
+
+.wordle-keyboard-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.wordle-key {
+  min-width: 40px;
+  height: 50px;
+  padding: 0 12px;
+  border: 2px solid #1a1a1a;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  border-radius: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wordle-key:hover {
+  background: #f0f0f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.wordle-key:active {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transform: translateY(1px);
+}
+
+.wordle-key-special {
+  min-width: 60px;
+  font-size: 14px;
+}
+
+.wordle-key-default {
+  background: #fff;
+  border-color: #1a1a1a;
+}
+
+.wordle-key-correct {
+  background: #28a745;
+  border-color: #28a745;
+  color: #fff;
+}
+
+.wordle-key-present {
+  background: #ffc107;
+  border-color: #ffc107;
+  color: #1a1a1a;
+}
+
+.wordle-key-absent {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: #fff;
+}
+
+.wordle-message {
+  padding: 20px;
+  border: 2px solid #1a1a1a;
+  background: #fff;
+  text-align: center;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  margin-top: 20px;
+}
+
+.wordle-message h2 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.wordle-message p {
+  margin: 0;
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.wordle-message-won {
+  border-color: #28a745;
+  background: #f0fff4;
+}
+
+.wordle-message-lost {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.wordle-error {
+  padding: 30px;
+  text-align: center;
+  border: 2px solid #dc3545;
+  background: #fff;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.wordle-error p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  color: #dc3545;
+}
+
+.wordle-btn {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: bold;
+  border: 2px solid #1a1a1a;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: #1a1a1a;
+  color: #fff;
+  margin: 0 10px;
+}
+
+.wordle-btn:hover {
+  background: #333;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .wordle-container {
+    padding: 8px 15px;
+    gap: 8px;
+    margin-top: 5px;
+  }
+
+  .wordle-cell {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+
+  .wordle-key {
+    min-width: 32px;
+    height: 45px;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .wordle-key-special {
+    min-width: 50px;
+    font-size: 12px;
+  }
+
+  .wordle-keyboard {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .wordle-container {
+    padding: 5px 10px;
+    gap: 8px;
+    margin-top: 5px;
+  }
+
+  .wordle-cell {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+
+  .wordle-row {
+    gap: 6px;
+  }
+
+  .wordle-key {
+    min-width: 28px;
+    height: 40px;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+
+  .wordle-key-special {
+    min-width: 45px;
+    font-size: 11px;
+  }
+
+  .wordle-keyboard-row {
+    gap: 4px;
+  }
+
+  .wordle-message {
+    padding: 15px;
+  }
+
+  .wordle-message h2 {
+    font-size: 20px;
+  }
+
+  .wordle-message p {
+    font-size: 14px;
+  }
+}
+
