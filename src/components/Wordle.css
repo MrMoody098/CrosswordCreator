@@ -485,70 +485,104 @@
 }
 
 .wordle-cell-correct {
-  background: #28a745;
-  border-color: #1e7e34;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-  transform: scale(1.05);
-  animation: flipCorrect 0.6s ease;
+  background: #fff;
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+  animation: flipCorrect 0.6s ease forwards;
 }
 
 .wordle-cell-present {
-  background: #ffc107;
-  border-color: #e0a800;
+  background: #fff;
+  border-color: #1a1a1a;
   color: #1a1a1a;
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
-  transform: scale(1.05);
-  animation: flipPresent 0.6s ease;
+  animation: flipPresent 0.6s ease forwards;
 }
 
 .wordle-cell-absent {
-  background: #6c757d;
-  border-color: #545b62;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
-  animation: flipAbsent 0.6s ease;
+  background: #fff;
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+  animation: flipAbsent 0.6s ease forwards;
 }
 
 @keyframes flipCorrect {
   0% {
     transform: rotateX(0deg) scale(1);
+    background: #fff;
+    border-color: #1a1a1a;
+    color: #1a1a1a;
   }
   50% {
     transform: rotateX(90deg) scale(0.9);
     background: #fff;
     border-color: #1a1a1a;
+    color: #1a1a1a;
+  }
+  51% {
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
   }
   100% {
     transform: rotateX(0deg) scale(1.05);
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
   }
 }
 
 @keyframes flipPresent {
   0% {
     transform: rotateX(0deg) scale(1);
+    background: #fff;
+    border-color: #1a1a1a;
+    color: #1a1a1a;
   }
   50% {
     transform: rotateX(90deg) scale(0.9);
     background: #fff;
     border-color: #1a1a1a;
+    color: #1a1a1a;
+  }
+  51% {
+    background: #ffc107;
+    border-color: #e0a800;
+    color: #1a1a1a;
   }
   100% {
     transform: rotateX(0deg) scale(1.05);
+    background: #ffc107;
+    border-color: #e0a800;
+    color: #1a1a1a;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
   }
 }
 
 @keyframes flipAbsent {
   0% {
     transform: rotateX(0deg) scale(1);
+    background: #fff;
+    border-color: #1a1a1a;
+    color: #1a1a1a;
   }
   50% {
     transform: rotateX(90deg) scale(0.9);
     background: #fff;
     border-color: #1a1a1a;
+    color: #1a1a1a;
+  }
+  51% {
+    background: #6c757d;
+    border-color: #545b62;
+    color: #fff;
   }
   100% {
     transform: rotateX(0deg) scale(1);
+    background: #6c757d;
+    border-color: #545b62;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
   }
 }
 

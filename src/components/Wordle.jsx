@@ -42,6 +42,7 @@ function Wordle() {
   const [savingUsername, setSavingUsername] = useState(false) // Saving username state
   const [showCompletedLayout, setShowCompletedLayout] = useState(false) // Show completed layout after congrats
   const [showLeaderboard, setShowLeaderboard] = useState(false) // Show leaderboard view
+  const [animatingRow, setAnimatingRow] = useState(null) // Track which row is currently animating
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -228,6 +229,15 @@ function Wordle() {
       evaluation: evaluation
     }
     setAttemptsHistory(prev => [...prev, attemptData])
+
+    // Start animation for this row after a brief delay to ensure state updates
+    setTimeout(() => {
+      setAnimatingRow(currentRow)
+      // Clear animating state after all animations complete (5 letters * 0.1s delay + 0.6s animation)
+      setTimeout(() => {
+        setAnimatingRow(null)
+      }, (WORD_LENGTH - 1) * 100 + 600)
+    }, 10)
 
     if (currentGuess === word) {
       // Won - score is currentRow + 1 (1-indexed)
@@ -479,10 +489,13 @@ function Wordle() {
                   {Array(WORD_LENGTH).fill(0).map((_, col) => {
                     const state = getCellState(row, col)
                     const letter = getCellLetter(row, col)
+                    const isAnimating = animatingRow === row && (state === 'correct' || state === 'present' || state === 'absent')
+                    const animationDelay = isAnimating ? col * 100 : 0
                     return (
                       <div
-                        key={col}
-                        className={`wordle-cell wordle-cell-${state}`}
+                        key={`${row}-${col}`}
+                        className={`wordle-cell wordle-cell-${state} ${isAnimating ? 'wordle-cell-animating' : ''}`}
+                        style={isAnimating ? { animationDelay: `${animationDelay}ms` } : {}}
                       >
                         {letter}
                       </div>
