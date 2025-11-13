@@ -51,20 +51,35 @@ function Auth({ onAuthChange }) {
 
     try {
       setSigningIn(true)
-      const { error } = await supabaseClient.auth.signInWithOAuth({
+      
+      // Construct redirect URL properly for GitHub Pages
+      const baseUrl = import.meta.env.BASE_URL || '/'
+      const redirectTo = window.location.origin + baseUrl
+      
+      console.log('Attempting OAuth sign-in with redirectTo:', redirectTo)
+      console.log('Current location:', window.location.href)
+      console.log('BASE_URL:', import.meta.env.BASE_URL)
+      
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + (import.meta.env.BASE_URL || '/'),
+          redirectTo: redirectTo,
         },
       })
 
       if (error) {
-        console.error('Error signing in:', error)
-        alert(`Error signing in: ${error.message}`)
+        console.error('OAuth error details:', {
+          message: error.message,
+          status: error.status,
+          error: error
+        })
+        alert(`Error signing in: ${error.message}\n\nPlease check:\n1. Supabase URL Configuration\n2. Google OAuth settings\n3. Browser console for details`)
+      } else if (data) {
+        console.log('OAuth redirect initiated:', data.url)
       }
     } catch (error) {
-      console.error('Error signing in:', error)
-      alert(`Error signing in: ${error.message}`)
+      console.error('Unexpected error during sign-in:', error)
+      alert(`Unexpected error: ${error.message}\n\nCheck browser console for details.`)
     } finally {
       setSigningIn(false)
     }
