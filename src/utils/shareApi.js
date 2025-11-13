@@ -298,7 +298,7 @@ export async function browseMarketplace({ limit = 20, offset = 0, sortBy = 'crea
 
     let query = supabaseClient
       .from('marketplace_crosswords')
-      .select('id, display_name, author_name, description, created_at, downloads, rating, rating_count, is_featured', { count: 'exact' })
+      .select('id, display_name, author_name, description, created_at, downloads, rating, rating_count, is_featured, grid_csv', { count: 'exact' })
       .eq('is_active', true)
 
     // Apply filters

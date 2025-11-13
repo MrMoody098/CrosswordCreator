@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { browseMarketplace, downloadFromMarketplace, deleteFromMarketplace, getCurrentUser } from '../utils/shareApi'
 import { saveCrosswordToLocalStorage, getMarketplaceUploads, untrackMarketplaceUpload } from '../utils/localStorage'
+import { parseGridCSV } from '../utils/csvParser'
+import CrosswordPreview from './CrosswordPreview'
 import Auth from './Auth'
 import '../App.css'
 import './Marketplace.css'
@@ -18,6 +20,7 @@ function Marketplace() {
   const [total, setTotal] = useState(0)
   const [userUploads, setUserUploads] = useState([]) // Track user's uploaded crosswords
   const [user, setUser] = useState(null) // Track authenticated user
+  const [gridPreviews, setGridPreviews] = useState({}) // Store grid previews by crossword ID
   const navigate = useNavigate()
 
   const limit = 12
@@ -64,9 +67,33 @@ function Marketplace() {
       console.log('Marketplace result:', result)
 
       if (result.success) {
-        setCrosswords(result.crosswords || [])
+        const crosswordsList = result.crosswords || []
+        setCrosswords(crosswordsList)
         setTotal(result.total || 0)
-        console.log(`Loaded ${result.crosswords?.length || 0} crosswords, total: ${result.total || 0}`)
+        console.log(`Loaded ${crosswordsList.length} crosswords, total: ${result.total || 0}`)
+        
+        // Parse grid previews for all crosswords
+        const previews = {}
+        crosswordsList.forEach(crossword => {
+          try {
+            // Note: We need to fetch the grid CSV from the database
+            // For now, we'll parse it when we have it in the crossword object
+            // The browseMarketplace function should return grid_csv if available
+            if (crossword.grid_csv) {
+              try {
+                const grid = parseGridCSV(crossword.grid_csv)
+                if (grid && grid.length > 0 && grid[0] && grid[0].length > 0) {
+                  previews[crossword.id] = grid
+                }
+              } catch (parseError) {
+                console.warn(`Failed to parse grid for ${crossword.id}:`, parseError)
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to load preview for ${crossword.id}:`, error)
+          }
+        })
+        setGridPreviews(previews)
       } else {
         const errorMsg = result.error || 'Failed to load marketplace'
         console.error('Marketplace error:', errorMsg)
@@ -258,6 +285,9 @@ function Marketplace() {
                         <p className="marketplace-card-author">By {crossword.author_name}</p>
                       )}
                     </div>
+                    {gridPreviews[crossword.id] && (
+                      <CrosswordPreview grid={gridPreviews[crossword.id]} />
+                    )}
                     {crossword.description && (
                       <p className="marketplace-card-description">{crossword.description}</p>
                     )}

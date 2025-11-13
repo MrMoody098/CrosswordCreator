@@ -178,15 +178,17 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s;
+  transition: all 0.2s ease;
   min-height: 200px;
   max-height: none;
   overflow: hidden;
   box-sizing: border-box;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .marketplace-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 .marketplace-featured-badge {
@@ -206,10 +208,13 @@
 }
 
 .marketplace-card-title {
-  font-size: 1.4em;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.3rem;
+  font-weight: bold;
   margin: 0 0 5px 0;
   color: #1a1a1a;
-  text-decoration: underline;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
