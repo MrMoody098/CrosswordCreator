@@ -16,6 +16,8 @@ Play crosswords with an intuitive interface featuring keyboard navigation, real-
 
 Create custom crosswords with a comprehensive visual editor. The builder includes three modes:
 
+![Game View](creator.png)
+
 - **Letter Mode**: Type letters directly into cells with automatic navigation
 - **Number Mode**: Add clue numbers to word starts with automatic renumbering
 - **Block Mode**: Place black squares to define grid structure
@@ -69,7 +71,3 @@ See [CROSSWORD_FORMAT.md](./CROSSWORD_FORMAT.md) for detailed format specificati
 ## Storage
 
 Crosswords created in the builder are saved to browser local storage and persist across sessions. Saved crosswords appear on the home page and can be played, shared, or uploaded to the marketplace.
-
-## Deployment
-
-The application is configured for deployment to GitHub Pages. See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment instructions including Supabase setup, database migrations, and environment configuration.
