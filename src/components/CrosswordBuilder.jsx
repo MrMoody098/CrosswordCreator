@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { gridToCSV, cluesToCSV, downloadCSV, saveCSVToServer } from '../utils/crosswordBuilder'
-import { saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage, saveBuilderState, loadBuilderState, clearBuilderState } from '../utils/localStorage'
+import { saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage, saveBuilderState, loadBuilderState, clearBuilderState, trackMarketplaceUpload } from '../utils/localStorage'
 import { parseCluesCSV, parseGridCSV } from '../utils/csvParser'
-import { shareCrosswordToSupabase, copyToClipboard } from '../utils/shareApi'
+import { shareCrosswordToSupabase, copyToClipboard, uploadToMarketplace, getCurrentUser } from '../utils/shareApi'
 import './CrosswordBuilder.css'
 
 const GRID_SIZE = 15
@@ -47,6 +47,11 @@ function CrosswordBuilder() {
   const [showImportModal, setShowImportModal] = useState(false) // For showing import modal
   const [shareableLink, setShareableLink] = useState(null) // Store shareable link
   const [linkCopied, setLinkCopied] = useState(false) // Track if link was copied
+  const [showUploadModal, setShowUploadModal] = useState(false) // For upload to marketplace modal
+  const [authorName, setAuthorName] = useState('') // Author name for marketplace
+  const [description, setDescription] = useState('') // Description for marketplace
+  const [uploading, setUploading] = useState(false) // Track upload status
+  const [user, setUser] = useState(null) // Track authenticated user
   const crosswordFileRef = useRef(null)
 
   const handleCellClick = (row, col) => {
@@ -1455,6 +1460,27 @@ function CrosswordBuilder() {
           }
         }
       }
+    } else if (e.key === ' ') {
+      // Space key: just move forward in current direction
+      e.preventDefault()
+      e.stopPropagation()
+      
+      // Auto-advance to next cell in current direction
+      if (currentDirection === 'across') {
+        if (col + 1 < gridSize) {
+          const nextCell = grid[row][col + 1]
+          if (nextCell !== '.' && (nextCell === null || typeof nextCell === 'object')) {
+            setSelectedCell({ row, col: col + 1 })
+          }
+        }
+      } else {
+        if (row + 1 < gridSize) {
+          const nextCell = grid[row + 1]?.[col]
+          if (nextCell !== '.' && (nextCell === null || typeof nextCell === 'object')) {
+            setSelectedCell({ row: row + 1, col })
+          }
+        }
+      }
     } else if (e.key.length === 1 && /[A-Za-z]/.test(e.key)) {
       const letter = e.key.toUpperCase()
       newGrid[row][col] = {
@@ -1516,6 +1542,15 @@ function CrosswordBuilder() {
       if (savedState.currentMode) setCurrentMode(savedState.currentMode)
       if (savedState.currentDirection) setCurrentDirection(savedState.currentDirection)
     }
+    // Check authentication status
+    getCurrentUser().then(({ user }) => setUser(user))
+    
+    // Listen for auth state changes
+    const handleAuthChange = (event) => {
+      setUser(event.detail.user)
+    }
+    window.addEventListener('auth-state-changed', handleAuthChange)
+    return () => window.removeEventListener('auth-state-changed', handleAuthChange)
   }, [])
 
   // Save state to localStorage when it changes (debounced)
@@ -1783,30 +1818,30 @@ function CrosswordBuilder() {
           </div>
 
           <div className="control-section">
-            <button
+              <button 
               onClick={() => setShowImportModal(true)}
               className="action-btn"
-            >
+              >
               Import Crossword
-            </button>
+              </button>
           </div>
 
           <div className="control-section">
-            <button
-              onClick={() => {
-                if (!crosswordName.trim()) {
-                  setNameInputError(true)
-                  setTimeout(() => setNameInputError(false), 600)
-                  return
-                }
-                setShowSaveModal(true)
-              }}
-              disabled={!crosswordName.trim()}
-              className="save-btn"
-            >
-              Save Crossword
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  if (!crosswordName.trim()) {
+                    setNameInputError(true)
+                    setTimeout(() => setNameInputError(false), 600)
+                    return
+                  }
+                  setShowSaveModal(true)
+                }}
+                disabled={!crosswordName.trim()}
+                className="save-btn"
+              >
+                Save Crossword
+              </button>
+            </div>
 
           <div className="control-section shortcuts-section">
             <button 
@@ -2117,6 +2152,17 @@ function CrosswordBuilder() {
                 >
                   Play Now
                 </button>
+                {user && (
+                  <button
+                    className="save-modal-btn save-btn-primary"
+                    onClick={() => {
+                      setShowPostSaveModal(false)
+                      setShowUploadModal(true)
+                    }}
+                  >
+                    Upload to Marketplace
+                  </button>
+                )}
                 <button
                   className="save-modal-btn save-btn-primary"
                   onClick={() => setShowPostSaveModal(false)}
@@ -2136,7 +2182,7 @@ function CrosswordBuilder() {
             <div className="save-modal-header">
               <h2>Import Crossword</h2>
               <button className="import-modal-close" onClick={() => setShowImportModal(false)}>×</button>
-            </div>
+    </div>
             <div className="save-modal-content">
               <p>Select the combined CSV file downloaded from the Crossword Creator to import a crossword for editing.</p>
               <div className="import-file-inputs">
@@ -2168,6 +2214,117 @@ function CrosswordBuilder() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload to Marketplace Modal */}
+      {showUploadModal && (
+        <div className="shortcuts-modal-overlay" onClick={() => {
+          setShowUploadModal(false)
+          setAuthorName('')
+          setDescription('')
+        }}>
+          <div className="save-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="save-modal-header">
+              <h2>Upload to Marketplace</h2>
+              <button className="save-modal-close" onClick={() => {
+                setShowUploadModal(false)
+                setAuthorName('')
+                setDescription('')
+              }}>×</button>
+            </div>
+            <div className="save-modal-content">
+              {uploading ? (
+                <p>Uploading to marketplace...</p>
+              ) : (
+                <>
+                  <p style={{ marginBottom: '15px' }}>
+                    Upload <strong>{crosswordName.trim() || 'your crossword'}</strong> to the marketplace for others to discover!
+                  </p>
+                  <div className="import-input-group" style={{ marginBottom: '15px' }}>
+                    <label htmlFor="author-name-input-builder">Author Name (optional):</label>
+                    <input
+                      id="author-name-input-builder"
+                      type="text"
+                      value={authorName}
+                      onChange={(e) => setAuthorName(e.target.value)}
+                      className="import-name-input"
+                      placeholder="Your name"
+                    />
+                  </div>
+                  <div className="import-input-group" style={{ marginBottom: '15px' }}>
+                    <label htmlFor="description-input-builder">Description (optional):</label>
+                    <textarea
+                      id="description-input-builder"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="import-name-input"
+                      placeholder="Describe your crossword..."
+                      rows="4"
+                    />
+                  </div>
+                  <div className="save-modal-buttons">
+                    <button
+                      className="save-modal-btn save-btn-primary"
+                      onClick={async () => {
+                        try {
+                          setUploading(true)
+                          const gridCSV = gridToCSV(grid, clues)
+                          const cluesCSV = cluesToCSV(clues)
+                          const displayName = crosswordName.trim()
+
+                          // Use manually entered authorName if provided, otherwise fall back to Google user's name
+                          const finalAuthorName = authorName.trim() || 
+                                                  user?.user_metadata?.full_name || 
+                                                  user?.user_metadata?.name || 
+                                                  user?.email?.split('@')[0] || 
+                                                  'Anonymous'
+
+                          const result = await uploadToMarketplace(
+                            gridCSV,
+                            cluesCSV,
+                            displayName,
+                            finalAuthorName,
+                            description
+                          )
+
+                          if (result.success) {
+                            // Track this upload so user can delete it later
+                            if (result.id) {
+                              trackMarketplaceUpload(result.id)
+                            }
+                            alert('Crossword uploaded to marketplace successfully!')
+                            setShowUploadModal(false)
+                            setAuthorName('')
+                            setDescription('')
+                          } else {
+                            alert(`Error uploading: ${result.error}`)
+                          }
+                        } catch (error) {
+                          console.error('Error uploading to marketplace:', error)
+                          alert(`Error uploading: ${error.message}`)
+                        } finally {
+                          setUploading(false)
+                        }
+                      }}
+                    >
+                      Upload
+                    </button>
+                    <button
+                      className="save-modal-btn save-btn-primary"
+                      onClick={() => {
+                        setShowUploadModal(false)
+                        setAuthorName('')
+                        setDescription('')
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

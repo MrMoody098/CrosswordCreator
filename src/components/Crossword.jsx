@@ -20,7 +20,7 @@ function Crossword({ grid, userAnswers, selectedCell, selectedDirection, onCellC
       }
       
       // Only handle crossword-related keys
-      const isCrosswordKey = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace', 'Delete'].includes(e.key) ||
+      const isCrosswordKey = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace', 'Delete', 'Enter'].includes(e.key) ||
                             (e.key.length === 1 && /[A-Za-z]/.test(e.key))
       
       if (isCrosswordKey) {

@@ -682,16 +682,18 @@
 }
 
 .save-modal-btn {
-  padding: 12px 24px;
-  font-size: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
   font-weight: bold;
   border: 2px solid #1a1a1a;
   border-radius: 0;
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   font-family: 'Georgia', 'Times New Roman', serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
   text-decoration: none;
   display: inline-block;
   text-align: center;
@@ -710,15 +712,15 @@
 
 .save-btn-cancel {
   background: #fff;
-  color: #dc3545;
-  border-color: #dc3545;
+  color: #1a1a1a;
+  border-color: #1a1a1a;
   width: 100%;
 }
 
 .save-btn-cancel:hover {
-  background: #dc3545;
+  background: #1a1a1a;
   color: #fff;
-  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {

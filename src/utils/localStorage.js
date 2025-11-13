@@ -343,3 +343,50 @@ export function clearViewerState(crosswordName) {
   }
 }
 
+// Marketplace upload tracking
+const MARKETPLACE_UPLOADS_KEY = 'marketplace_uploads'
+
+/**
+ * Track a marketplace upload
+ * @param {string} marketplaceId - The ID of the uploaded crossword
+ */
+export function trackMarketplaceUpload(marketplaceId) {
+  try {
+    const uploads = getMarketplaceUploads()
+    if (!uploads.includes(marketplaceId)) {
+      uploads.push(marketplaceId)
+      localStorage.setItem(MARKETPLACE_UPLOADS_KEY, JSON.stringify(uploads))
+    }
+  } catch (error) {
+    console.error('Error tracking marketplace upload:', error)
+  }
+}
+
+/**
+ * Get list of marketplace IDs the user has uploaded
+ * @returns {Array<string>} Array of marketplace crossword IDs
+ */
+export function getMarketplaceUploads() {
+  try {
+    const uploads = localStorage.getItem(MARKETPLACE_UPLOADS_KEY)
+    return uploads ? JSON.parse(uploads) : []
+  } catch (error) {
+    console.error('Error getting marketplace uploads:', error)
+    return []
+  }
+}
+
+/**
+ * Remove a marketplace upload from tracking
+ * @param {string} marketplaceId - The ID of the crossword to untrack
+ */
+export function untrackMarketplaceUpload(marketplaceId) {
+  try {
+    const uploads = getMarketplaceUploads()
+    const filtered = uploads.filter(id => id !== marketplaceId)
+    localStorage.setItem(MARKETPLACE_UPLOADS_KEY, JSON.stringify(filtered))
+  } catch (error) {
+    console.error('Error untracking marketplace upload:', error)
+  }
+}
+

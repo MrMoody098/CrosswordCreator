@@ -256,6 +256,14 @@ function CrosswordViewer({ crosswordName = 'default' }) {
       return
     }
 
+    if (key === 'Enter') {
+      // Check answer if all cells are filled
+      if (isComplete) {
+        handleCheckAnswer()
+      }
+      return
+    }
+
     if (key.length === 1 && /[A-Za-z]/.test(key)) {
       const letter = key.toUpperCase()
       const newAnswers = { ...userAnswers, [`${row}-${col}`]: letter }

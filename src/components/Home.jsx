@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { getCrosswordList, deleteCrosswordFromLocalStorage, saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage } from '../utils/localStorage'
+import { getCrosswordList, deleteCrosswordFromLocalStorage, saveCrosswordToLocalStorage, loadCrosswordFromLocalStorage, trackMarketplaceUpload } from '../utils/localStorage'
 import { parseCluesCSV, parseGridCSV, parseCombinedCSV } from '../utils/csvParser'
-import { fetchSharedCrossword, shareCrosswordToSupabase, copyToClipboard } from '../utils/shareApi'
+import { fetchSharedCrossword, shareCrosswordToSupabase, copyToClipboard, uploadToMarketplace, getCurrentUser } from '../utils/shareApi'
 import CrosswordPreview from './CrosswordPreview'
+import Auth from './Auth'
 import '../App.css'
 import './Home.css'
 
@@ -16,6 +17,15 @@ function Home() {
 
   useEffect(() => {
     loadCrosswords()
+    // Check authentication status
+    getCurrentUser().then(({ user }) => setUser(user))
+    
+    // Listen for auth state changes
+    const handleAuthChange = (event) => {
+      setUser(event.detail.user)
+    }
+    window.addEventListener('auth-state-changed', handleAuthChange)
+    return () => window.removeEventListener('auth-state-changed', handleAuthChange)
   }, [])
 
   // Handle shared crossword links from Supabase
@@ -61,6 +71,11 @@ function Home() {
 
   const [shareModalData, setShareModalData] = useState(null)
   const [shareLinkCopied, setShareLinkCopied] = useState(false)
+  const [uploadToMarketplaceData, setUploadToMarketplaceData] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [authorName, setAuthorName] = useState('')
+  const [description, setDescription] = useState('')
+  const [user, setUser] = useState(null)
 
   const handleShare = async (crosswordName) => {
     try {
@@ -350,6 +365,9 @@ function Home() {
       <header className="app-header">
         <h1 className="newspaper-title">The Daily Crossword</h1>
         <p className="subtitle">Your Crossword Collection</p>
+        <div className="home-auth-container">
+          <Auth />
+        </div>
       </header>
 
       <div className="home-container">
@@ -359,6 +377,9 @@ function Home() {
           </button>
           <button className="home-btn import-btn" onClick={() => setShowImportModal(true)}>
             Import Crossword
+          </button>
+          <button className="home-btn marketplace-btn" onClick={() => navigate('/marketplace')}>
+            Marketplace
           </button>
           <button className="home-btn wordle-btn" onClick={() => navigate('/daily-wordle')}>
             Daily Wordl
@@ -486,19 +507,40 @@ function Home() {
                   >
                     Play
                   </button>
+                <button
+                  className="card-btn share-btn"
+                  onClick={() => handleShare(crossword.name)}
+                  title="Share this crossword"
+                >
+                  Share
+                </button>
+                {user && (
                   <button
-                    className="card-btn share-btn"
-                    onClick={() => handleShare(crossword.name)}
-                    title="Share this crossword"
+                    className="card-btn marketplace-upload-btn"
+                    onClick={() => {
+                      const crosswordData = loadCrosswordFromLocalStorage(crossword.name)
+                      if (!crosswordData) {
+                        alert('Crossword not found')
+                        return
+                      }
+                      setUploadToMarketplaceData({
+                        crosswordName: crossword.name,
+                        displayName: crosswordData.metadata?.displayName || crossword.name
+                      })
+                      setAuthorName('')
+                      setDescription('')
+                    }}
+                    title="Upload to marketplace"
                   >
-                    Share
+                    Upload
                   </button>
-                  <button
-                    className="card-btn delete-btn"
-                    onClick={() => handleDelete(crossword.name)}
-                  >
-                    Delete
-                  </button>
+                )}
+                <button
+                  className="card-btn delete-btn"
+                  onClick={() => handleDelete(crossword.name)}
+                >
+                  Delete
+                </button>
                 </div>
               </div>
             ))
@@ -554,8 +596,134 @@ function Home() {
                     </small>
                   </div>
                   <div className="import-modal-buttons">
+                    {user && (
+                      <button 
+                        className="import-btn import-btn-primary" 
+                        onClick={() => {
+                          setUploadToMarketplaceData({
+                            crosswordName: shareModalData.crosswordName,
+                            displayName: shareModalData.displayName
+                          })
+                          setShareModalData(null)
+                        }}
+                      >
+                        Upload to Marketplace
+                      </button>
+                    )}
                     <button className="import-btn import-btn-cancel" onClick={() => setShareModalData(null)}>
                       Close
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {uploadToMarketplaceData && (
+        <div className="import-modal-overlay" onClick={() => {
+          setUploadToMarketplaceData(null)
+          setAuthorName('')
+          setDescription('')
+        }}>
+          <div className="import-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="import-modal-header">
+              <h2>Upload to Marketplace</h2>
+              <button className="import-modal-close" onClick={() => {
+                setUploadToMarketplaceData(null)
+                setAuthorName('')
+                setDescription('')
+              }}>×</button>
+            </div>
+            <div className="import-modal-content">
+              {uploading ? (
+                <p>Uploading to marketplace...</p>
+              ) : (
+                <>
+                  <p style={{ marginBottom: '15px' }}>
+                    Upload <strong>{uploadToMarketplaceData.displayName}</strong> to the marketplace for others to discover!
+                  </p>
+                  <div className="import-input-group">
+                    <label htmlFor="author-name-input">Author Name (optional):</label>
+                    <input
+                      id="author-name-input"
+                      type="text"
+                      value={authorName}
+                      onChange={(e) => setAuthorName(e.target.value)}
+                      className="import-name-input"
+                      placeholder="Your name"
+                    />
+                  </div>
+                  <div className="import-input-group">
+                    <label htmlFor="description-input">Description (optional):</label>
+                    <textarea
+                      id="description-input"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="import-name-input"
+                      placeholder="Describe your crossword..."
+                      rows="4"
+                    />
+                  </div>
+                  <div className="import-modal-buttons">
+                    <button 
+                      className="import-btn import-btn-primary" 
+                      onClick={async () => {
+                        try {
+                          setUploading(true)
+                          const crosswordData = loadCrosswordFromLocalStorage(uploadToMarketplaceData.crosswordName)
+                          if (!crosswordData) {
+                            alert('Crossword not found')
+                            return
+                          }
+
+                          // Use manually entered authorName if provided, otherwise fall back to Google user's name
+                          const finalAuthorName = authorName.trim() || 
+                                                  user?.user_metadata?.full_name || 
+                                                  user?.user_metadata?.name || 
+                                                  user?.email?.split('@')[0] || 
+                                                  'Anonymous'
+
+                          const result = await uploadToMarketplace(
+                            crosswordData.gridCSV,
+                            crosswordData.cluesCSV,
+                            uploadToMarketplaceData.displayName,
+                            finalAuthorName,
+                            description
+                          )
+
+                          if (result.success) {
+                            // Track this upload so user can delete it later
+                            if (result.id) {
+                              trackMarketplaceUpload(result.id)
+                            }
+                            alert('Crossword uploaded to marketplace successfully!')
+                            setUploadToMarketplaceData(null)
+                            setAuthorName('')
+                            setDescription('')
+                          } else {
+                            alert(`Error uploading: ${result.error}`)
+                          }
+                        } catch (error) {
+                          console.error('Error uploading to marketplace:', error)
+                          alert(`Error uploading: ${error.message}`)
+                        } finally {
+                          setUploading(false)
+                        }
+                      }}
+                    >
+                      Upload
+                    </button>
+                    <button 
+                      className="import-btn import-btn-cancel" 
+                      onClick={() => {
+                        setUploadToMarketplaceData(null)
+                        setAuthorName('')
+                        setDescription('')
+                      }}
+                    >
+                      Cancel
                     </button>
                   </div>
                 </>

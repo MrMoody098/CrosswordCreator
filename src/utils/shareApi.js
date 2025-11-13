@@ -14,6 +14,38 @@ if (supabaseUrl && supabaseAnonKey) {
 }
 
 /**
+ * Get the current authenticated user
+ * @returns {Promise<{user: object|null, error: string|null}>}
+ */
+export async function getCurrentUser() {
+  try {
+    if (!supabaseClient) {
+      return { user: null, error: 'Supabase client not configured' }
+    }
+
+    const { data: { user }, error } = await supabaseClient.auth.getUser()
+    
+    if (error) {
+      return { user: null, error: error.message }
+    }
+
+    return { user, error: null }
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return { user: null, error: error.message }
+  }
+}
+
+/**
+ * Check if user is authenticated
+ * @returns {Promise<boolean>}
+ */
+export async function isAuthenticated() {
+  const { user } = await getCurrentUser()
+  return !!user
+}
+
+/**
  * Generate a unique share ID
  * @returns {string} Unique share ID
  */
@@ -185,6 +217,230 @@ export async function copyToClipboard(text) {
   } catch (error) {
     console.error('Error copying to clipboard:', error)
     return false
+  }
+}
+
+/**
+ * Upload a crossword to the marketplace
+ * @param {string} gridCSV - The grid CSV data
+ * @param {string} cluesCSV - The clues CSV data
+ * @param {string} displayName - The display name of the crossword
+ * @param {string} authorName - The author's name (optional)
+ * @param {string} description - Description of the crossword (optional)
+ * @returns {Promise<{success: boolean, id?: string, error?: string}>}
+ */
+export async function uploadToMarketplace(gridCSV, cluesCSV, displayName, authorName = '', description = '') {
+  try {
+    if (!supabaseClient) {
+      const errorMsg = import.meta.env.DEV
+        ? 'Supabase client not configured. Please check your .env file.'
+        : 'Supabase client not configured. Please contact the administrator.'
+      throw new Error(errorMsg)
+    }
+
+    // Check if user is authenticated
+    const { user, error: authError } = await getCurrentUser()
+    if (!user || authError) {
+      throw new Error('You must be signed in to upload crosswords to the marketplace. Please sign in with Google.')
+    }
+
+    // Insert into marketplace
+    const { data, error } = await supabaseClient
+      .from('marketplace_crosswords')
+      .insert({
+        display_name: displayName,
+        grid_csv: gridCSV,
+        clues_csv: cluesCSV,
+        author_name: authorName?.trim() || user.user_metadata?.full_name || user.user_metadata?.name || user.email || null,
+        description: description || null,
+        is_active: true
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('Error uploading to marketplace:', error)
+      throw new Error(`Failed to upload crossword: ${error.message}`)
+    }
+
+    return {
+      success: true,
+      id: data.id
+    }
+  } catch (error) {
+    console.error('Error uploading to marketplace:', error)
+    return {
+      success: false,
+      error: error.message
+    }
+  }
+}
+
+/**
+ * Browse marketplace crosswords
+ * @param {object} options - Query options
+ * @param {number} options.limit - Number of results to return
+ * @param {number} options.offset - Offset for pagination
+ * @param {string} options.sortBy - Sort by: 'created_at', 'downloads', 'rating'
+ * @param {string} options.order - Order: 'asc' or 'desc'
+ * @param {string} options.search - Search term for display name
+ * @param {boolean} options.featuredOnly - Only return featured crosswords
+ * @returns {Promise<{success: boolean, crosswords?: Array, total?: number, error?: string}>}
+ */
+export async function browseMarketplace({ limit = 20, offset = 0, sortBy = 'created_at', order = 'desc', search = '', featuredOnly = false } = {}) {
+  try {
+    if (!supabaseClient) {
+      const errorMsg = import.meta.env.DEV
+        ? 'Supabase client not configured. Please check your .env file.'
+        : 'Supabase client not configured. Please contact the administrator.'
+      throw new Error(errorMsg)
+    }
+
+    let query = supabaseClient
+      .from('marketplace_crosswords')
+      .select('id, display_name, author_name, description, created_at, downloads, rating, rating_count, is_featured', { count: 'exact' })
+      .eq('is_active', true)
+
+    // Apply filters
+    if (featuredOnly) {
+      query = query.eq('is_featured', true)
+    }
+
+    if (search) {
+      query = query.ilike('display_name', `%${search}%`)
+    }
+
+    // Apply sorting
+    query = query.order(sortBy, { ascending: order === 'asc' })
+
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1)
+
+    console.log('Executing Supabase query for marketplace...')
+    const { data, error, count } = await query
+
+    if (error) {
+      console.error('Supabase query error:', error)
+      console.error('Error code:', error.code)
+      console.error('Error message:', error.message)
+      console.error('Error details:', error.details)
+      console.error('Error hint:', error.hint)
+      throw new Error(`Failed to browse marketplace: ${error.message}`)
+    }
+
+    console.log('Query successful. Data:', data, 'Count:', count)
+
+    return {
+      success: true,
+      crosswords: data || [],
+      total: count || 0
+    }
+  } catch (error) {
+    console.error('Error browsing marketplace:', error)
+    return {
+      success: false,
+      error: error.message,
+      crosswords: [],
+      total: 0
+    }
+  }
+}
+
+/**
+ * Delete a crossword from the marketplace
+ * @param {string} id - The marketplace crossword ID
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function deleteFromMarketplace(id) {
+  try {
+    if (!supabaseClient) {
+      const errorMsg = import.meta.env.DEV
+        ? 'Supabase client not configured. Please check your .env file.'
+        : 'Supabase client not configured. Please contact the administrator.'
+      throw new Error(errorMsg)
+    }
+
+    // Delete from marketplace (soft delete by setting is_active to false)
+    const { error } = await supabaseClient
+      .from('marketplace_crosswords')
+      .update({ is_active: false })
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting from marketplace:', error)
+      throw new Error(`Failed to delete crossword: ${error.message}`)
+    }
+
+    return {
+      success: true
+    }
+  } catch (error) {
+    console.error('Error deleting from marketplace:', error)
+    return {
+      success: false,
+      error: error.message
+    }
+  }
+}
+
+/**
+ * Download a crossword from the marketplace
+ * @param {string} id - The marketplace crossword ID
+ * @returns {Promise<{success: boolean, gridCSV?: string, cluesCSV?: string, displayName?: string, error?: string}>}
+ */
+export async function downloadFromMarketplace(id) {
+  try {
+    if (!supabaseClient) {
+      const errorMsg = import.meta.env.DEV
+        ? 'Supabase client not configured. Please check your .env file.'
+        : 'Supabase client not configured. Please contact the administrator.'
+      throw new Error(errorMsg)
+    }
+
+    // Check if user is authenticated
+    const { user, error: authError } = await getCurrentUser()
+    if (!user || authError) {
+      throw new Error('You must be signed in to download crosswords from the marketplace. Please sign in with Google.')
+    }
+
+    // Fetch crossword data
+    const { data: crossword, error: fetchError } = await supabaseClient
+      .from('marketplace_crosswords')
+      .select('grid_csv, clues_csv, display_name')
+      .eq('id', id)
+      .eq('is_active', true)
+      .single()
+
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        throw new Error('Crossword not found')
+      }
+      throw new Error(`Failed to fetch crossword: ${fetchError.message}`)
+    }
+
+    // Increment download count
+    const { error: updateError } = await supabaseClient
+      .from('marketplace_crosswords')
+      .update({ downloads: (crossword.downloads || 0) + 1 })
+      .eq('id', id)
+
+    if (updateError) {
+      console.warn('Failed to increment download count:', updateError)
+      // Don't fail the download if count update fails
+    }
+
+    return {
+      success: true,
+      gridCSV: crossword.grid_csv,
+      cluesCSV: crossword.clues_csv,
+      displayName: crossword.display_name
+    }
+  } catch (error) {
+    console.error('Error downloading from marketplace:', error)
+    return {
+      success: false,
+      error: error.message
+    }
   }
 }
 
